@@ -57,9 +57,10 @@ def validate_graph(
 
         if node["type"] == "branch":
             try:
-                normalize_condition(node["properties"]["condition"], allow_empty_variable=False)
+                normalize_condition(node["properties"].get("condition"), allow_empty_variable=False)
             except ValueError as error:
                 report("error", "invalid_condition", str(error), node["id"])
+                continue
 
         if variables is not None and node["type"] in ("branch", "set-variable"):
             condition = node["properties"].get("condition", {})
