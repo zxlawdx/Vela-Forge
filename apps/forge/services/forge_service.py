@@ -16,11 +16,13 @@ from apps.forge.domain.nodes import Node
 from apps.forge.domain.project import parse_project, serialize_project
 from apps.forge.services.validator import validate_graph
 from apps.forge.services.history import CommandHistory
+from apps.forge.services.editor_state import EditorState
 from apps.forge.domain.registry import NODE_TYPES, default_properties, validate_properties
 
 
 class ForgeService:
-    def __init__(self):
+    def __init__(self, editor_state: EditorState | None = None):
+        self.editor_state = editor_state or EditorState()
         self.history = CommandHistory()
         self.graph = Graph()
         self.metadata = {"name": "untitled"}
@@ -206,6 +208,7 @@ class ForgeService:
                 temporary.write(content)
 
             os.replace(temporary_path, target)
+            self.editor_state.remember(str(target), self.metadata["name"])
         finally:
             if temporary_path is not None:
                 temporary_path.unlink(missing_ok=True)
@@ -222,6 +225,20 @@ class ForgeService:
             raise ValueError("Arquivo .vforge não contém JSON UTF-8 válido") from error
 
         project = self.open_project(data)
+        self.editor_state.remember(str(target), self.metadata["name"])
+
+        return project
+
+    def open_recent(self, path: str) -> dict:
+        recents = self.editor_state.recents()
+
+        if not any(item["path"] == path for item in recents):
+            raise ValueError("Projeto não está na lista de recentes")
+
+        try:
+            project = self.open_project_file(path)
+        except OSError as error:
+            raise ValueError("Projeto recente indisponível; o arquivo pode ter sido movido") from error
 
         return project
 

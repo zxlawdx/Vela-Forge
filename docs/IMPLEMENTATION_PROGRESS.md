@@ -176,3 +176,14 @@ an empty GameObject. Dialogue/Choice use IMGUI; flow events expose C# events.
 Properties are escaped C# literals, never executable user code. Native Unity
 compilation/Play Mode verification remains pending because no Unity editor is
 installed. Domain entities contain no engine-specific fields or imports.
+
+## Issue #14 — recents and preferences
+
+Vela SQLiteStore holds only recent file paths/names/timestamps and editor
+preferences (last target, preview grid, last project path). Native successful
+open/save records a bounded list of 20 recents. Listing recents never scans or
+opens project files; opening one validates it before replacing the current graph.
+Configuration supports reset without touching .vforge or active content. Browser
+upload/download cannot retain an authorized OS path and therefore does not add a
+reopenable recent entry. Full workspace docking/layout persistence remains future
+scope, as specified in the issue. SQLite never stores Graph/project content.

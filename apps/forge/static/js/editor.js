@@ -1,3 +1,4 @@
+import {setupPreferences} from "./components/preferences.js";
 import {setupExport} from "./components/export.js";
 import {setupHistory, renderHistory} from "./components/history.js";
 import {setupAssets, renderAssets} from "./components/assets.js";
@@ -74,6 +75,7 @@ async function bootstrap() {
     setupAssets(refreshGraph, logConsole);
     setupHistory(refreshGraph, logConsole);
     setupExport(refreshGraph, logConsole);
+    await setupPreferences(refreshGraph, logConsole);
 
     document.querySelector("#vf-preview-project").addEventListener("click", async () => {
         try {

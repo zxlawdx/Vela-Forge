@@ -2278,3 +2278,20 @@
 #vf-assets button {
     margin: 3px 0;
 }
+
+
+.vf-settings-dialog {
+    background: var(--vf-panel);
+    color: var(--vf-text);
+    border: 1px solid var(--vf-border);
+    border-radius: 6px;
+    min-width: 360px;
+    max-width: 80vw;
+    max-height: 70vh;
+}
+
+.vf-settings-dialog button,
+.vf-settings-dialog label {
+    display: block;
+    margin: 10px 0;
+}

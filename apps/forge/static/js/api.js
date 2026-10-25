@@ -217,3 +217,42 @@ export async function exportProject(engine) {
 
     return parseResponse(response);
 }
+
+
+export async function getPreferences() {
+    const response = await fetch(`${API_BASE}/preferences`);
+
+    return parseResponse(response);
+}
+
+export async function updatePreferences(changes) {
+    const response = await fetch(`${API_BASE}/preferences`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(changes),
+    });
+
+    return parseResponse(response);
+}
+
+export async function getRecents() {
+    const response = await fetch(`${API_BASE}/recents`);
+
+    return parseResponse(response);
+}
+
+export async function openRecent(path) {
+    const response = await fetch(`${API_BASE}/recents/open`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({path}),
+    });
+
+    return parseResponse(response);
+}
+
+export async function resetEditorState() {
+    const response = await fetch(`${API_BASE}/editor-state`, {method: "DELETE"});
+
+    return parseResponse(response);
+}
