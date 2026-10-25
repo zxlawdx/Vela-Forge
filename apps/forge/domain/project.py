@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 from .assets import Asset, validate_asset
+from .conditions import normalize_condition
 from .connections import Connection
 from .events import Event
 from .graph import Graph
@@ -74,6 +75,10 @@ def parse_project(project: dict) -> tuple[Graph, dict, dict, dict]:
 
             properties = default_properties(record["type"])
             properties.update(record["properties"])
+
+            if record["type"] == "branch":
+                properties["condition"] = normalize_condition(properties["condition"])
+
             validate_properties(record["type"], properties)
             node = Node(node_id, record["type"], deepcopy(properties))
             graph.add_node(node)

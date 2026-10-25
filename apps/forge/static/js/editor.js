@@ -18,6 +18,7 @@ import {
     getEvents,
     getAssets,
     getHistory,
+    getNodeTypes,
 } from "./api.js";
 
 
@@ -54,6 +55,7 @@ import {
 
 async function bootstrap() {
     await setupWorkspace();
+    state.nodeTypes = await getNodeTypes();
 
     setupTabs();
     setupCanvas();

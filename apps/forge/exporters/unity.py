@@ -84,6 +84,30 @@ public partial class ForgeRunner : MonoBehaviour
         return Convert.ToDouble(value) != 0;
     }
 
+    private bool ConditionMatches(NodeData node)
+    {
+        var condition = (Dictionary<string, object>)node.Properties["condition"];
+        object left;
+        variables.TryGetValue((string)condition["variable"], out left);
+        object right = condition["value"];
+        string operation = (string)condition["operator"];
+        if (operation == "truthy") return Truthy(left);
+        if (operation == "falsy") return !Truthy(left);
+        if (operation == "equals") return Equals(left, right);
+        if (operation == "not_equals") return !Equals(left, right);
+        if (!(left is double) || !(right is double)) return false;
+        double a = (double)left;
+        double b = (double)right;
+        switch (operation)
+        {
+            case "greater_than": return a > b;
+            case "less_than": return a < b;
+            case "greater_or_equal": return a >= b;
+            case "less_or_equal": return a <= b;
+        }
+        return false;
+    }
+
     public void Choose(int index)
     {
         if (waiting == null || waiting.Type != "choice") return;
@@ -126,9 +150,7 @@ public partial class ForgeRunner : MonoBehaviour
                     ChoiceRequested?.Invoke(labels);
                     return;
                 case "branch":
-                    object condition;
-                    variables.TryGetValue(Text(node, "condition"), out condition);
-                    port = Truthy(condition) ? "true" : "false";
+                    port = ConditionMatches(node) ? "true" : "false";
                     break;
                 case "set-variable":
                     variables[Text(node, "variable")] = node.Properties["value"];
@@ -258,7 +280,7 @@ def export_project(project: dict) -> dict[str, str]:
             "# Forge export — Unity\n\nCopy Assets/Forge into a Unity 2021.3+ project.\n"
             "Create an empty GameObject and add the ForgeRunner component. Enter Play Mode.\n"
             "The starter displays dialogue/choice buttons with IMGUI and exposes C# events.\n"
-            "Branch.condition names a variable; Set Variable stores JSON values.\n"
+            "Branch.condition uses structured comparisons; Set Variable stores JSON values.\n"
             "Cycles are limited to 256 automatic steps per interaction.\n"
             "Assets remain embedded project data; automatic scene placement is future scope.\n"
         ),

@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from math import isfinite
 
+from .conditions import normalize_condition
 from .nodes import Node
 from .registry import get_node_type, node_ports, validate_properties
 from .connections import Connection
@@ -64,6 +65,10 @@ class Graph:
             raise ValueError("Propriedades devem ser um objeto")
 
         updated = {**node.properties, **properties}
+
+        if node.type == "branch":
+            updated["condition"] = normalize_condition(updated["condition"])
+
         validate_properties(node.type, updated)
         ports = node_ports(node.type, updated)
         output_names = [port["name"] for port in ports["outputs"]]

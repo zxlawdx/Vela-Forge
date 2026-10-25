@@ -73,3 +73,34 @@ def test_unity_compile_with_real_engine_references(tmp_path):
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert (tmp_path / "Forge.dll").is_file()
+
+
+@pytest.mark.skipif(not GODOT, reason="Godot 4 executable not installed; set FORGE_GODOT")
+@pytest.mark.parametrize("operator,value,scenarios", [
+    ("equals", True, [[False, False], [True, True]]),
+    ("not_equals", True, [[True, False], [False, True]]),
+    ("greater_than", 10, [[9, False], [11, True]]),
+    ("less_than", 10, [[11, False], [9, True]]),
+    ("greater_or_equal", 10, [[9, False], [10, True]]),
+    ("less_or_equal", 10, [[11, False], [10, True]]),
+    ("falsy", None, [[True, False], [False, True]]),
+])
+def test_godot_structured_comparison_runtime(tmp_path, operator, value, scenarios):
+    service = smoke_service()
+    service.update_node("branch", {"properties": {"condition": {
+        "variable": "has_key", "operator": operator, "value": value,
+    }}})
+    service.export_directory("godot", str(tmp_path))
+    source = (ROOT / "tests/engines/godot_smoke.gd").read_text()
+    source = source.replace(
+        "for flag in [false, true]:",
+        "for scenario in " + json.dumps(scenarios) + ":\n        var flag = scenario[1]",
+    ).replace('scene.variables["has_key"] = flag', 'scene.variables["has_key"] = scenario[0]')
+    (tmp_path / "smoke.gd").write_text(source)
+    result = subprocess.run(
+        [GODOT, "--headless", "--path", str(tmp_path), "--script", "smoke.gd"],
+        capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "FORGE_GODOT_SMOKE_PASSED" in result.stdout, result.stdout + result.stderr
+    assert "SCRIPT ERROR" not in result.stderr

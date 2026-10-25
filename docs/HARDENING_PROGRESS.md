@@ -78,3 +78,14 @@ No second project history or full docking framework was introduced. Fixed an
 existing collapse bug where an inline height overrode the collapsed CSS value.
 Browser checks verify placement, resize, reload persistence and default restore;
 backend tests reject invalid dimensions/enums and verify restart/reset behavior.
+
+## Structured Branch conditions
+
+Branch now stores variable/operator/scalar-value conditions. The eight operators
+are declared centrally and presented in the Inspector; no eval is used. Legacy
+string conditions normalize to truthy conditions on load. Malformed operators,
+missing values and non-numeric ordered comparisons are rejected atomically.
+Editing integrates the existing history. Both exporters consume the same condition.
+All comparison operators passed actual Godot execution against true/false cases;
+Unity output passed syntax parsing, not engine compilation. Browser editing and
+undo/redo passed. Equality distinguishes booleans from numeric values.

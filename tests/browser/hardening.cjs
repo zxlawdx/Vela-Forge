@@ -99,6 +99,23 @@ const {chromium} = require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES
         assert.equal(await page.locator(".bottom-top").count(), 0);
         console.log("PASS: centralized workspace persistence, placement, sidebar resize and default restore");
 
+        await page.request.post(api + "/project/new");
+        await page.request.post(api + "/nodes", {data: {type: "branch", position: {x: 80, y: 80}}});
+        await page.reload();
+        await page.waitForFunction(() => document.querySelector("#vf-console")?.textContent.includes("iniciado"));
+        await page.locator(".vf-node-head").click();
+        await page.locator('[data-condition="variable"]').fill("score");
+        await page.locator('[data-condition="operator"]').selectOption("greater_than");
+        await page.locator('[data-condition="value"]').fill("10");
+        await page.locator('#vf-node-properties-form button[type="submit"]').click();
+        await page.waitForFunction(() => JSON.parse(document.querySelector("#vf-ir-output").textContent).nodes[0].properties.condition.operator === "greater_than");
+        await page.locator(".vf-node-head").click();
+        await page.keyboard.press("Control+z");
+        await page.waitForFunction(() => JSON.parse(document.querySelector("#vf-ir-output").textContent).nodes[0].properties.condition.operator === "truthy");
+        await page.keyboard.press("Control+y");
+        await page.waitForFunction(() => JSON.parse(document.querySelector("#vf-ir-output").textContent).nodes[0].properties.condition.value === 10);
+        console.log("PASS: structured Branch editor, JSON comparison value, undo/redo");
+
         const preview = await page.evaluate(async () => {
             const {renderAssetPreview, previewRenderers} = await import("/__vela__/static/forge/js/components/preview.js");
             const layer = document.createElement("div");

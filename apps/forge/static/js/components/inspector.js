@@ -96,6 +96,13 @@ export function renderInspector() {
                     }
                 }
 
+                if (node.type === "branch") {
+                    const variable = inspector.querySelector('[data-condition="variable"]').value;
+                    const operator = inspector.querySelector('[data-condition="operator"]').value;
+                    const field = inspector.querySelector('[data-condition="value"]');
+                    properties.condition = {variable, operator, value: field.disabled ? null : JSON.parse(field.value)};
+                }
+
                 document.dispatchEvent(
                     new CustomEvent("forge:node-properties-request", {
                         detail: {nodeId: node.id, properties},
@@ -110,6 +117,16 @@ export function renderInspector() {
             }
         }
     );
+
+    const operator = inspector.querySelector('[data-condition="operator"]');
+
+    if (operator) {
+        const updateValueField = () => {
+            inspector.querySelector('[data-condition="value"]').disabled = ["truthy", "falsy"].includes(operator.value);
+        };
+        operator.addEventListener("change", updateValueField);
+        updateValueField();
+    }
 
     inspector.querySelector("#vf-inspector-delete").addEventListener(
         "click",
@@ -133,6 +150,25 @@ function renderProperties(properties = {}, nodeType = "") {
 
     return entries
         .map(([key, value]) => {
+            if (nodeType === "branch" && key === "condition") {
+                const operators = state.nodeTypes.branch.condition_operators;
+
+                return `
+                    <div class="vf-field">
+                        <label>Variável</label>
+                        <input data-condition="variable" value="${escapeHtml(value.variable)}">
+                        <label>Comparação</label>
+                        <select data-condition="operator">
+                            ${Object.entries(operators).map(([name, label]) => `
+                                <option value="${name}" ${name === value.operator ? "selected" : ""}>${escapeHtml(label)}</option>
+                            `).join("")}
+                        </select>
+                        <label>Valor (JSON: true, 123, "texto")</label>
+                        <input data-condition="value" value="${escapeHtml(JSON.stringify(value.value))}">
+                    </div>
+                `;
+            }
+
             if (nodeType === "set-variable" && key === "value") {
                 return `
                     <div class="vf-field">

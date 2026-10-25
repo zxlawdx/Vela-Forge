@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from apps.forge.exporters import godot, unity
 from apps.forge.domain.assets import Asset, validate_asset
+from apps.forge.domain.conditions import normalize_condition
 from apps.forge.domain.connections import Connection
 from apps.forge.domain.events import Event
 from apps.forge.domain.graph import Graph
@@ -298,6 +299,9 @@ class ForgeService:
                 raise ValueError("Propriedades devem ser um objeto")
 
             values.update(properties)
+
+        if node_type == "branch":
+            values["condition"] = normalize_condition(values["condition"])
 
         validate_properties(node_type, values)
 

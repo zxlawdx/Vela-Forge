@@ -1,5 +1,6 @@
 from collections import Counter
 
+from apps.forge.domain.conditions import normalize_condition
 from apps.forge.domain.registry import node_ports, validate_properties
 
 
@@ -49,8 +50,13 @@ def validate_graph(graph: dict, events: dict | None = None) -> list[dict]:
         ):
             report("error", "missing_event", "Evento referenciado não existe", node["id"])
 
+        if node["type"] == "branch":
+            try:
+                normalize_condition(node["properties"]["condition"], allow_empty_variable=False)
+            except ValueError as error:
+                report("error", "invalid_condition", str(error), node["id"])
+
         required = {
-            "branch": "condition",
             "set-variable": "variable",
             "event": "event",
         }.get(node["type"])

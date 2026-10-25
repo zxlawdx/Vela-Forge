@@ -270,3 +270,10 @@ export async function reconnectConnection(connectionId, changes) {
 
     return parseResponse(response);
 }
+
+
+export async function getNodeTypes() {
+    const response = await fetch(`${API_BASE}/node-types`);
+
+    return parseResponse(response);
+}

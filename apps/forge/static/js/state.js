@@ -5,6 +5,7 @@ export const state = {
     },
 
     events: [],
+    nodeTypes: {},
 
     selectedNodeId: null,
     selectedConnectionId: null,
