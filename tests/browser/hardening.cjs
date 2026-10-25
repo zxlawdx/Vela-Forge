@@ -70,6 +70,18 @@ const {chromium} = require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES
         await page.waitForFunction(id => JSON.parse(document.querySelector("#vf-ir-output").textContent).connections[0].target_node_id === id, nodes[2].id);
         await page.keyboard.press("Control+y");
         await page.waitForFunction(id => JSON.parse(document.querySelector("#vf-ir-output").textContent).connections[0].source_node_id === id, nodes[3].id);
+        const preview = await page.evaluate(async () => {
+            const {renderAssetPreview, previewRenderers} = await import("/__vela__/static/forge/js/components/preview.js");
+            const layer = document.createElement("div");
+            const dispose = renderAssetPreview(layer, {name: "model.glb", mime_type: "model/gltf-binary", data: "unsupported"});
+            const unsupported = layer.textContent;
+            dispose();
+            renderAssetPreview(layer, {name: "missing.png", mime_type: "image/png", data: null});
+            return {types: Object.keys(previewRenderers), unsupported, missing: layer.textContent};
+        });
+        assert.equal(preview.types.length, 4);
+        assert.ok(preview.unsupported.includes("não suportado"));
+        assert.ok(preview.missing.includes("indisponível"));
         assert.deepEqual(errors, []);
         console.log("PASS: reconnect target/source, invalid direction/self-drop, Escape, ID stability, undo/redo");
     } catch (error) {

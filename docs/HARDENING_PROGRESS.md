@@ -59,3 +59,11 @@ Each output file uses atomic replacement; an OS failure cannot truncate an old
 file. A later-file failure may still leave a partially updated export directory;
 project content is not changed. The existing simple exporter function contract
 and deterministic archive generation were preserved.
+
+## Preview renderer selection
+
+Scene Preview now dispatches through a small MIME-to-renderer registry. The image
+renderer owns cleanup/error handling, preventing an old image callback from
+replacing a newer preview. PNG/JPEG/GIF/WebP continue to work in the browser.
+Missing data and unsupported renderer types are explicit; GLB/glTF are not yet
+accepted or advertised because no actual model renderer has been added.
