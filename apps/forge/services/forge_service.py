@@ -3,7 +3,7 @@ from io import BytesIO
 import json
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
 from uuid import uuid4
 
@@ -58,13 +58,47 @@ class ForgeService:
 
     def export_directory(self, engine: str, directory: str) -> None:
         result = self.generate_export(engine)
-        target = Path(directory)
-        target.mkdir(parents=True, exist_ok=True)
+        target = Path(directory).resolve()
+        paths = []
 
         for name, content in result["files"].items():
-            path = target / name
+            if (
+                not isinstance(name, str)
+                or not name
+                or "\\" in name
+                or ":" in name
+                or "\x00" in name
+                or Path(name).is_absolute()
+                or PureWindowsPath(name).drive
+                or ".." in Path(name).parts
+                or not isinstance(content, str)
+            ):
+                raise ValueError("Caminho de export inválido")
+
+            path = (target / name).resolve()
+
+            if not path.is_relative_to(target) or path == target:
+                raise ValueError("Export não pode sair do diretório selecionado")
+
+            paths.append((path, content))
+
+        target.mkdir(parents=True, exist_ok=True)
+
+        for path, content in paths:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content, encoding="utf-8")
+            temporary_path = None
+
+            try:
+                with NamedTemporaryFile(
+                    mode="w", encoding="utf-8", dir=path.parent, delete=False,
+                ) as temporary:
+                    temporary_path = Path(temporary.name)
+                    temporary.write(content)
+
+                os.replace(temporary_path, path)
+            finally:
+                if temporary_path is not None:
+                    temporary_path.unlink(missing_ok=True)
 
     def validate(self) -> list[dict]:
         problems = validate_graph(self.graph.to_dict(), self.events)

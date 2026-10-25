@@ -50,3 +50,12 @@ The Unity test requires FORGE_CSC and FORGE_UNITY_MANAGED_DIR with actual Unity
 CoreModule/IMGUIModule DLLs; it never substitutes fake Unity stubs. Unity compiler,
 reference assemblies and Play Mode are unavailable here, so that test is skipped.
 The existing syntax checks remain separate from engine execution claims.
+
+## Export robustness
+
+Export validates every generated relative path before writing any file, including
+Windows drive/ADS/backslash forms, parent traversal and existing symlink escapes.
+Each output file uses atomic replacement; an OS failure cannot truncate an old
+file. A later-file failure may still leave a partially updated export directory;
+project content is not changed. The existing simple exporter function contract
+and deterministic archive generation were preserved.
