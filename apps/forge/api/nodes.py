@@ -9,6 +9,7 @@ def create_node(data: dict):
     node = forge_service.create_node(
         node_type=data["type"],
         properties=data.get("properties"),
+        position=data.get("position"),
     )
 
 

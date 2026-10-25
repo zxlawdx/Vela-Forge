@@ -104,3 +104,10 @@ Wires can be selected and removed with Delete/Backspace. Text editing does not
 trigger graph deletion. Selection retains the stable connection ID as the basis
 for future source/target reconnection; endpoint dragging is intentionally future
 scope in Issue #11. DELETE passes through the shared service to Graph.disconnect.
+
+## Issue #12 — library drag/drop
+
+Library items now send a Forge-specific drag payload. Only the workspace handles
+the drop, converts screen coordinates through its existing pan/zoom transform,
+and dispatches to editor.js. The create-node POST accepts position atomically;
+invalid coordinates leave no new node behind. Double-click remains available.

@@ -88,6 +88,8 @@ export function setupCanvas() {
 
     setupConnectionEvents();
 
+    setupNodeDrop();
+
     applyViewport();
 
 
@@ -1975,4 +1977,31 @@ function escapeHtml(
             "'",
             "&#039;"
         );
+}
+
+function setupNodeDrop() {
+    workspace.addEventListener("dragover", (event) => {
+        if (event.dataTransfer.types.includes("application/x-forge-node")) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+        }
+    });
+
+    workspace.addEventListener("drop", (event) => {
+        const type = event.dataTransfer.getData("application/x-forge-node");
+
+        if (!type) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const position = pointerToWorld(event.clientX, event.clientY);
+
+        document.dispatchEvent(
+            new CustomEvent("forge:node-drop", {
+                detail: {type, position},
+            })
+        );
+    });
 }

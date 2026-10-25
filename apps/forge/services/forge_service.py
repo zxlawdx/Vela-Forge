@@ -14,6 +14,7 @@ class ForgeService:
         self,
         node_type: str,
         properties: dict | None = None,
+        position: dict | None = None,
     ) -> Node:
         values = default_properties(node_type)
 
@@ -36,6 +37,13 @@ class ForgeService:
         )
 
         self.graph.add_node(node)
+
+        if position is not None:
+            try:
+                self.graph.update_position(node.id, position)
+            except ValueError:
+                self.graph.remove_node(node.id)
+                raise
 
         return node
 

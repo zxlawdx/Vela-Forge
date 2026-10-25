@@ -47,6 +47,10 @@ async function bootstrap() {
 
     setupCreateNode();
     setupNodeLibrary();
+
+    document.addEventListener("forge:node-drop", async (event) => {
+        await createNodeByType(event.detail.type, event.detail.position);
+    });
     setupDeleteNode();
     setupRefresh();
 
@@ -134,6 +138,13 @@ function setupNodeLibrary() {
 
 
     nodes.forEach((item) => {
+        item.draggable = true;
+
+        item.addEventListener("dragstart", (event) => {
+            event.dataTransfer.setData("application/x-forge-node", item.dataset.type);
+            event.dataTransfer.effectAllowed = "copy";
+        });
+
         item.addEventListener(
             "dblclick",
             async () => {
@@ -188,13 +199,15 @@ function setupNodeLibrary() {
    ========================================================= */
 
 async function createNodeByType(
-    type
+    type,
+    position = null
 ) {
     try {
         const node =
             await createNode(
                 type,
-                {}
+                {},
+                position
             );
 
 

@@ -25,7 +25,8 @@ export async function getGraph() {
 
 export async function createNode(
     type,
-    properties = {}
+    properties = {},
+    position = null
 ) {
     const response = await fetch(
         `${API_BASE}/nodes`,
@@ -40,6 +41,7 @@ export async function createNode(
             body: JSON.stringify({
                 type,
                 properties,
+                position,
             }),
         }
     );

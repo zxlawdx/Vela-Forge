@@ -127,3 +127,16 @@ def test_disconnect_and_missing_id():
 
     with pytest.raises(ValueError):
         service.delete_connection(connection.id)
+
+
+def test_create_node_at_drop_position():
+    service = ForgeService()
+    node = service.create_node("branch", position={"x": -27.5, "y": 480})
+
+    assert service.get_node(node.id)["position"] == {"x": -27.5, "y": 480.0}
+    assert node.type == "branch"
+
+    with pytest.raises(ValueError):
+        service.create_node("dialogue", position={"x": None, "y": 0})
+
+    assert list(service.graph.nodes) == [node.id]
