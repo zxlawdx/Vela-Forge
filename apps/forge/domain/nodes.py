@@ -5,4 +5,7 @@ from typing import Any
 class Node:
     id: str
     type: str
-    properties: dict[str, any] = field(default_factory=dict)
+    properties: dict[str, Any] = field(default_factory=dict)
+    position: dict[str, float] = field(
+        default_factory=lambda: {"x": 120.0, "y": 120.0}
+    )

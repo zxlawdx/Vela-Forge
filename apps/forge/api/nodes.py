@@ -21,3 +21,15 @@ def delete_node(request: Request):
     return {
         "deleted": node_id
     }
+
+@api.patch("/forge/nodes/<node_id>")
+def update_node(request: Request):
+    data = request.json
+    node_id = request.path_params["node_id"]
+
+    node = forge_service.update_node_position(
+        node_id,
+        data["position"],
+    )
+
+    return node

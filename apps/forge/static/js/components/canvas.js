@@ -659,7 +659,16 @@ function endNodeDrag(
     }
 
 
+    const nodeId = draggingNode.nodeId;
+    const position = getNodePosition(nodeId);
+
     draggingNode = null;
+
+    document.dispatchEvent(
+        new CustomEvent("forge:node-moved", {
+            detail: {nodeId, position},
+        })
+    );
 }
 
 

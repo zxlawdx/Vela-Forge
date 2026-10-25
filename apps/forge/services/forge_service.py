@@ -18,9 +18,22 @@ class ForgeService:
             id=f"node_{uuid4().hex}",
             type=node_type,
             properties=properties or {},
+            position={
+                "x": 120.0 + len(self.graph.nodes) % 3 * 300,
+                "y": 120.0 + len(self.graph.nodes) // 3 * 190,
+            },
         )
 
         self.graph.add_node(node)
+
+        return node
+
+    def update_node_position(
+        self,
+        node_id: str,
+        position: dict,
+    ) -> Node:
+        node = self.graph.update_position(node_id, position)
 
         return node
 

@@ -3,6 +3,7 @@ import {
     createNode,
     deleteNode,
     createConnection,
+    updateNode,
 } from "./api.js";
 
 
@@ -49,6 +50,7 @@ async function bootstrap() {
     setupRefresh();
 
     setupConnectionCreation();
+    setupNodeMovement();
 
     await refreshGraph();
 
@@ -553,3 +555,20 @@ function defaultProperties(
    ========================================================= */
 
 bootstrap();
+
+function setupNodeMovement() {
+    document.addEventListener(
+        "forge:node-moved",
+        async (event) => {
+            const {nodeId, position} = event.detail;
+
+            try {
+                await updateNode(nodeId, {position});
+            } catch (error) {
+                logConsole(`Erro ao mover node: ${error.message}`);
+            }
+
+            await refreshGraph();
+        }
+    );
+}

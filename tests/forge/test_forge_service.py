@@ -42,3 +42,32 @@ def test_rejected_connection_is_not_stored():
         service.create_connection(source.id, "out", "missing", "in")
 
     assert service.get_graph()["connections"] == []
+
+
+def test_update_position_is_serialized():
+    service = ForgeService()
+    node = service.create_node("dialogue")
+
+    result = service.update_node_position(node.id, {"x": -20, "y": 73.5})
+
+    assert result is node
+    assert service.get_graph()["nodes"][0]["position"] == {
+        "x": -20.0,
+        "y": 73.5,
+    }
+
+
+@pytest.mark.parametrize(
+    "position",
+    [None, {}, {"x": True, "y": 1}, {"x": float("nan"), "y": 0},
+     {"x": 1, "y": "2"}, {"x": 1, "y": float("inf")}],
+)
+def test_invalid_position_preserves_node(position):
+    service = ForgeService()
+    node = service.create_node("dialogue")
+    previous = node.position.copy()
+
+    with pytest.raises(ValueError):
+        service.update_node_position(node.id, position)
+
+    assert node.position == previous
