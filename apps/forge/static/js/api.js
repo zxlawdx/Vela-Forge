@@ -86,3 +86,18 @@ export async function createConnection(
 
     return parseResponse(response);
 }
+
+export async function updateNode(nodeId, changes) {
+    const response = await fetch(
+        `${API_BASE}/nodes/${encodeURIComponent(nodeId)}`,
+        {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(changes),
+        }
+    );
+
+    return parseResponse(response);
+}

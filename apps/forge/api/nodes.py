@@ -16,8 +16,20 @@ def create_node(data: dict):
 def delete_node(request: Request):
     node_id = request.path_params["node_id"]
 
-    forge_service.graph.remove_node(node_id)
+    forge_service.delete_node(node_id)
 
     return {
         "deleted": node_id
     }
+
+@api.patch("/forge/nodes/<node_id>")
+def update_node(request: Request):
+    data = request.json
+    node_id = request.path_params["node_id"]
+
+    node = forge_service.update_node(
+        node_id,
+        data,
+    )
+
+    return node

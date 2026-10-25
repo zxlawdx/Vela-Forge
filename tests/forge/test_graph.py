@@ -38,10 +38,22 @@ def test_connect_nodes():
     connection = Connection(
         id="connection_1",
         source_node_id="start_1",
-        source_port="flow",
+        source_port="out",
         target_node_id="dialogue_1",
-        target_port="flow_in",
+        target_port="in",
     )
+
+    graph.connect(connection)
+
+    assert graph.connections[connection.id] is connection
+    assert graph.to_dict()["connections"] == [{
+        "id": "connection_1",
+        "source_node_id": "start_1",
+        "source_port": "out",
+        "target_node_id": "dialogue_1",
+        "target_port": "in",
+    }]
+
 
 def test_connection_requires_existing_nodes():
     graph = Graph()
@@ -53,9 +65,9 @@ def test_connection_requires_existing_nodes():
     connection = Connection(
         id="connection_1",
         source_node_id="start_1",
-        source_port="flow",
+        source_port="out",
         target_node_id="dialogue_1",
-        target_port="flow_in",
+        target_port="in",
     )
 
     with pytest.raises(ValueError):
@@ -72,9 +84,9 @@ def test_adjacency():
         Connection(
             id="connection_1",
             source_node_id="start_1",
-            source_port="flow",
+            source_port="out",
             target_node_id="dialogue_1",
-            target_port="flow_in",
+            target_port="in",
         )
     )
 
@@ -82,9 +94,9 @@ def test_adjacency():
         Connection(
             id="connection_2",
             source_node_id="dialogue_1",
-            source_port="flow_out",
+            source_port="out",
             target_node_id="end_1",
-            target_port="flow_in",
+            target_port="in",
         )
     )
 
@@ -115,3 +127,36 @@ def to_dict(self) -> dict:
             for connection in self.connections.values()
         ],
     }
+
+@pytest.mark.parametrize(
+    "source,source_port,target,target_port",
+    [
+        ("missing", "out", "target", "in"),
+        ("source", "out", "missing", "in"),
+        ("source", "out", "source", "in"),
+        ("source", "in", "target", "in"),
+        ("source", "out", "target", "out"),
+    ],
+)
+def test_invalid_connection_does_not_change_graph(
+    source,
+    source_port,
+    target,
+    target_port,
+):
+    graph = Graph()
+    graph.add_node(Node("source", "dialogue"))
+    graph.add_node(Node("target", "dialogue"))
+
+    connection = Connection(
+        "connection_1",
+        source,
+        source_port,
+        target,
+        target_port,
+    )
+
+    with pytest.raises(ValueError):
+        graph.connect(connection)
+
+    assert graph.connections == {}

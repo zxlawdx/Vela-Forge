@@ -18,7 +18,11 @@ export const state = {
 export function setGraph(graph) {
     state.graph = graph;
 
-    assignInitialPositions();
+    state.positions.clear();
+
+    for (const node of graph.nodes) {
+        setNodePosition(node.id, node.position.x, node.position.y);
+    }
 }
 
 export function getNode(nodeId) {
@@ -50,18 +54,3 @@ export function getNodePosition(nodeId) {
     return state.positions.get(nodeId);
 }
 
-function assignInitialPositions() {
-    state.graph.nodes.forEach((node, index) => {
-        if (state.positions.has(node.id)) {
-            return;
-        }
-
-        const column = index % 3;
-        const row = Math.floor(index / 3);
-
-        state.positions.set(node.id, {
-            x: 120 + column * 300,
-            y: 120 + row * 190,
-        });
-    });
-}

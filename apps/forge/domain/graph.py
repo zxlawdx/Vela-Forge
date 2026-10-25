@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from math import isfinite
 
 from .nodes import Node
 from .connections import Connection
@@ -20,6 +21,48 @@ class Graph:
             raise ValueError(f"Node '{node_id}' não existe")
 
         return self.nodes[node_id]
+
+    def update_position(
+        self,
+        node_id: str,
+        position: dict,
+    ) -> Node:
+        node = self.get_node(node_id)
+
+        if not isinstance(position, dict):
+            raise ValueError("Posição deve conter x e y numéricos")
+
+        coordinates = {}
+
+        for axis in ("x", "y"):
+            value = position.get(axis)
+
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not isfinite(value)
+            ):
+                raise ValueError("Posição deve conter x e y finitos")
+
+            coordinates[axis] = float(value)
+
+        node.position = coordinates
+
+        return node
+
+    def update_properties(
+        self,
+        node_id: str,
+        properties: dict,
+    ) -> Node:
+        node = self.get_node(node_id)
+
+        if not isinstance(properties, dict):
+            raise ValueError("Propriedades devem ser um objeto")
+
+        node.properties.update(properties)
+
+        return node
 
     def remove_node(self, node_id: str) -> None:
         if node_id not in self.nodes:
@@ -55,6 +98,15 @@ class Graph:
                 f"Node de destino '{connection.target_node_id}' não existe"
             )
 
+        if connection.source_node_id == connection.target_node_id:
+            raise ValueError("Self-connection não é permitida")
+
+        if connection.source_port != "out":
+            raise ValueError("Port de origem deve ser 'out'")
+
+        if connection.target_port != "in":
+            raise ValueError("Port de destino deve ser 'in'")
+
         self.connections[connection.id] = connection
 
     def disconnect(self, connection_id: str) -> None:
@@ -85,6 +137,7 @@ class Graph:
                     "id": node.id,
                     "type": node.type,
                     "properties": node.properties,
+                    "position": node.position,
                 }
                 for node in self.nodes.values()
             ],

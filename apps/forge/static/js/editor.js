@@ -3,6 +3,7 @@ import {
     createNode,
     deleteNode,
     createConnection,
+    updateNode,
 } from "./api.js";
 
 
@@ -49,6 +50,8 @@ async function bootstrap() {
     setupRefresh();
 
     setupConnectionCreation();
+    setupNodeMovement();
+    setupPropertyEditing();
 
     await refreshGraph();
 
@@ -77,6 +80,8 @@ async function refreshGraph() {
         setGraph(graph);
 
         renderGraph();
+
+        renderInspector();
 
         renderForgeIR();
 
@@ -553,3 +558,41 @@ function defaultProperties(
    ========================================================= */
 
 bootstrap();
+
+function setupNodeMovement() {
+    document.addEventListener(
+        "forge:node-moved",
+        async (event) => {
+            const {nodeId, position} = event.detail;
+
+            try {
+                await updateNode(nodeId, {position});
+            } catch (error) {
+                logConsole(`Erro ao mover node: ${error.message}`);
+            }
+
+            await refreshGraph();
+        }
+    );
+}
+
+
+function setupPropertyEditing() {
+    document.addEventListener("forge:error", (event) => {
+        logConsole(event.detail);
+    });
+
+    document.addEventListener(
+        "forge:node-properties-request",
+        async (event) => {
+            const {nodeId, properties} = event.detail;
+
+            try {
+                await updateNode(nodeId, {properties});
+                await refreshGraph();
+            } catch (error) {
+                logConsole(`Erro ao editar node: ${error.message}`);
+            }
+        }
+    );
+}
