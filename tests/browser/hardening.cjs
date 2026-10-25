@@ -9,7 +9,7 @@ const {chromium} = require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES
         executablePath: process.env.FORGE_CHROMIUM_PATH,
         args: process.env.FORGE_CHROMIUM_PATH ? ["--no-sandbox", "--disable-dev-shm-usage", "--no-zygote", "--single-process", "--in-process-gpu", "--use-gl=angle", "--use-angle=swiftshader"] : [],
     });
-    const page = await browser.newPage({viewport: {width: 1600, height: 1000}});
+    const page = await browser.newPage({viewport: {width: Number(process.env.FORGE_VIEWPORT_WIDTH || 1600), height: Number(process.env.FORGE_VIEWPORT_HEIGHT || 1000)}});
     const errors = [];
     page.on("pageerror", error => errors.push(error.message));
     const base = "http://127.0.0.1:8765";
@@ -81,11 +81,14 @@ const {chromium} = require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES
         await page.mouse.up();
         await page.click('[data-mode="event"]');
         await page.click('[data-tab="console"]');
+        await page.click("#vf-collapse-workspace");
+        await page.locator("#vf-right-resizer").dblclick();
         await page.waitForFunction(async () => {
             const prefs = await (await fetch("/api/forge/preferences")).json();
             return prefs.workspace.inspectorSide === "left" && prefs.workspace.bottomPosition === "top"
                 && prefs.workspace.leftWidth > 250 && prefs.workspace.mode === "event"
-                && prefs.workspace.activeBottomTab === "console";
+                && prefs.workspace.activeBottomTab === "console"
+                && prefs.workspace.bottomCollapsed && prefs.workspace.inspectorCollapsed;
         });
         await page.reload();
         await page.waitForFunction(() => document.querySelector("#vf-console")?.textContent.includes("iniciado"));
@@ -93,6 +96,9 @@ const {chromium} = require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES
         assert.equal(await page.locator(".vf-main-pane.bottom-top").count(), 1);
         assert.equal(await page.locator('[data-mode="event"]').getAttribute("class"), "active");
         assert.equal(await page.locator('[data-tab="console"]').getAttribute("aria-selected"), "true");
+        assert.equal(await page.locator(".bottom-collapsed").count(), 1);
+        assert.equal(await page.locator(".inspector-collapsed").count(), 1);
+        assert.ok(await page.locator(".vf-bottom-pane").evaluate(panel => panel.getBoundingClientRect().height <= 2));
         await page.click('[data-action="configuration"]');
         await page.click('[data-action="restore-layout"]');
         await page.waitForFunction(() => !document.querySelector(".inspector-left"));
@@ -122,6 +128,13 @@ const {chromium} = require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES
         await page.keyboard.press("Control+y");
         await page.waitForFunction(() => JSON.parse(document.querySelector("#vf-ir-output").textContent).nodes[0].properties.condition.value === 10);
         console.log("PASS: structured Branch editor, JSON comparison value, undo/redo");
+        await page.locator('.vf-library-node[data-type="set-variable"]').dblclick();
+        await page.waitForFunction(() => document.querySelectorAll(".vf-node").length === 2);
+        await page.locator('.vf-node[data-type="set-variable"] .vf-node-head').click();
+        await page.locator('[data-property="variable"]').selectOption("score");
+        await page.locator('[data-property="value"]').fill("20");
+        await page.locator('#vf-node-properties-form button[type="submit"]').click();
+        await page.waitForFunction(() => JSON.parse(document.querySelector("#vf-ir-output").textContent).nodes.some(node => node.type === "set-variable" && node.properties.value === 20));
         page.once("dialog", dialog => dialog.accept());
         await page.click('[data-delete-variable="score"]');
         await page.waitForFunction(async () => {
@@ -131,6 +144,19 @@ const {chromium} = require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES
         await page.keyboard.press("Control+z");
         await page.waitForFunction(() => document.querySelector('#vf-variables [data-delete-variable="score"]'));
         console.log("PASS: typed variable creation, reference selection, deletion warning and undo");
+
+        await page.click('[data-mode="event"]');
+        page.once("dialog", dialog => dialog.accept("original_event"));
+        await page.click('[data-action="create-event"]');
+        await page.waitForSelector("[data-rename-event]");
+        const eventId = await page.locator("[data-rename-event]").getAttribute("data-rename-event");
+        page.once("dialog", dialog => dialog.accept("renamed_event"));
+        await page.click("[data-rename-event]");
+        await page.waitForFunction(() => document.querySelector(".vf-event-row").textContent.includes("renamed_event"));
+        assert.equal(await page.locator("[data-rename-event]").getAttribute("data-rename-event"), eventId);
+        await page.keyboard.press("Control+z");
+        await page.waitForFunction(() => document.querySelector(".vf-event-row").textContent.includes("original_event"));
+        console.log("PASS: event rename retains ID and integrates undo");
 
         const preview = await page.evaluate(async () => {
             const {renderAssetPreview, previewRenderers} = await import("/__vela__/static/forge/js/components/preview.js");
