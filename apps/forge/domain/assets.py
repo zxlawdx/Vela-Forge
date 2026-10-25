@@ -19,7 +19,7 @@ def validate_asset(asset: Asset) -> int:
     if not isinstance(asset.name, str) or not asset.name.strip() or len(asset.name) > 255:
         raise ValueError("Nome de asset inválido")
 
-    if asset.mime_type not in IMAGE_TYPES:
+    if not isinstance(asset.mime_type, str) or asset.mime_type not in IMAGE_TYPES:
         raise ValueError("Preview inicial aceita PNG, JPEG, GIF e WebP")
 
     if asset.data is None:

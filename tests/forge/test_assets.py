@@ -28,6 +28,7 @@ def test_image_asset_survives_round_trip(tmp_path):
 
 @pytest.mark.parametrize("mime,data", [
     ("image/svg+xml", PNG),
+    ([], PNG),
     ("image/png", "broken"),
     ("image/png", base64.b64encode(b"not a PNG").decode()),
 ])
