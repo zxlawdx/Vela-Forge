@@ -14,7 +14,7 @@ from apps.forge.services.forge_service import forge_service
 
 @pytest.fixture
 def client():
-    forge_service.graph = Graph()
+    forge_service.new_project()
     server = ApiServer(api.new_router(), docs_enabled=False)
     server.register_routes()
 
@@ -36,7 +36,7 @@ def client():
         return int(status[0].split()[0]), json.loads(payload)
 
     yield request
-    forge_service.graph = Graph()
+    forge_service.new_project()
 
 
 def test_connection_position_and_property_lifecycle(client):
@@ -108,3 +108,16 @@ def test_delete_connection_endpoint(client):
     assert client("DELETE", "/connections/" + connection["id"])[0] == 200
     assert client("GET", "/graph")[1]["connections"] == []
     assert client("DELETE", "/connections/" + connection["id"])[0] == 400
+
+
+def test_project_http_round_trip(client):
+    client("POST", "/nodes", {"type": "start"})
+    status, project = client("GET", "/project")
+    assert status == 200
+
+    assert client("POST", "/project/new")[0] == 200
+    assert client("GET", "/graph")[1]["nodes"] == []
+    assert client("PUT", "/project", project)[0] == 200
+    assert client("GET", "/project")[1] == project
+    assert client("PUT", "/project", {"format_version": 99})[0] == 400
+    assert client("GET", "/project")[1] == project

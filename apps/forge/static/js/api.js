@@ -113,3 +113,36 @@ export async function deleteConnection(connectionId) {
 
     return parseResponse(response);
 }
+
+
+export async function getProject() {
+    const response = await fetch(`${API_BASE}/project`);
+
+    return parseResponse(response);
+}
+
+export async function openProject(project) {
+    const response = await fetch(`${API_BASE}/project`, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(project),
+    });
+
+    return parseResponse(response);
+}
+
+export async function newProject() {
+    const response = await fetch(`${API_BASE}/project/new`, {method: "POST"});
+
+    return parseResponse(response);
+}
+
+export async function renameProject(name) {
+    const response = await fetch(`${API_BASE}/project`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name}),
+    });
+
+    return parseResponse(response);
+}

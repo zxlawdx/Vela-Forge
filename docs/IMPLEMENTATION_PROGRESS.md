@@ -111,3 +111,12 @@ Library items now send a Forge-specific drag payload. Only the workspace handles
 the drop, converts screen coordinates through its existing pan/zoom transform,
 and dispatches to editor.js. The create-node POST accepts position atomically;
 invalid coordinates leave no new node behind. Double-click remains available.
+
+## Issue #5 — .vforge persistence
+
+Versioned project JSON stores metadata, stable IDs, properties, positions and
+connections; derived ports are regenerated from the registry. Loading builds and
+validates a separate Graph before replacing the active project. Native open/save
+use pywebview's public file dialogs through the consumer bridge; files are written
+with atomic replacement. Browser testing uses upload/download as a fallback.
+Save, Open and New actions are connected. Invalid files preserve the current graph.

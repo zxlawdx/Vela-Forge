@@ -48,3 +48,49 @@ class StarterBridge(BaseBridge):
         except (OSError, webbrowser.Error) as exc:
             self.logger.warning(f"Falha na ação do starter {action}: {exc}")
             return {"ok": False, "error": "Não foi possível abrir o recurso neste ambiente."}
+
+
+    def save_forge_project(self) -> dict:
+        import webview
+        from apps.forge.services.forge_service import forge_service
+
+        try:
+            selected = webview.windows[0].create_file_dialog(
+                webview.FileDialog.SAVE,
+                save_filename="project.vforge",
+                file_types=("Vela Forge (*.vforge)",),
+            )
+
+            if not selected:
+                return {"cancelled": True}
+
+            path = selected if isinstance(selected, str) else selected[0]
+
+            if not path.lower().endswith(".vforge"):
+                path += ".vforge"
+
+            forge_service.save_project_file(path)
+
+            return {"ok": True}
+        except (OSError, ValueError) as error:
+            return {"error": str(error)}
+
+    def open_forge_project(self) -> dict:
+        import webview
+        from apps.forge.services.forge_service import forge_service
+
+        try:
+            selected = webview.windows[0].create_file_dialog(
+                webview.FileDialog.OPEN,
+                allow_multiple=False,
+                file_types=("Vela Forge (*.vforge)",),
+            )
+
+            if not selected:
+                return {"cancelled": True}
+
+            forge_service.open_project_file(selected[0])
+
+            return {"ok": True}
+        except (OSError, ValueError) as error:
+            return {"error": str(error)}

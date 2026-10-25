@@ -1,14 +1,85 @@
+import json
+import os
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 from uuid import uuid4
 
 from apps.forge.domain.connections import Connection
 from apps.forge.domain.graph import Graph
 from apps.forge.domain.nodes import Node
+from apps.forge.domain.project import parse_project, serialize_project
 from apps.forge.domain.registry import NODE_TYPES, default_properties, validate_properties
 
 
 class ForgeService:
     def __init__(self):
         self.graph = Graph()
+        self.metadata = {"name": "untitled"}
+
+    def get_project(self) -> dict:
+        project = serialize_project(self.graph, self.metadata)
+
+        return project
+
+    def open_project(self, data: dict) -> dict:
+        graph, metadata = parse_project(data)
+        self.graph = graph
+        self.metadata = metadata
+
+        return self.get_project()
+
+    def new_project(self) -> dict:
+        self.graph = Graph()
+        self.metadata = {"name": "untitled"}
+
+        return self.get_project()
+
+    def rename_project(self, name: str) -> dict:
+        if not isinstance(name, str) or not name.strip() or len(name) > 128:
+            raise ValueError("Nome do projeto deve ter entre 1 e 128 caracteres")
+
+        self.metadata["name"] = name.strip()
+
+        return self.get_project()
+
+    def save_project_file(self, path: str) -> None:
+        target = Path(path)
+
+        if target.suffix.lower() != ".vforge":
+            raise ValueError("Use a extensão .vforge")
+
+        content = json.dumps(self.get_project(), ensure_ascii=False, indent=2, allow_nan=False)
+        temporary_path = None
+
+        try:
+            with NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=target.parent,
+                delete=False,
+            ) as temporary:
+                temporary_path = Path(temporary.name)
+                temporary.write(content)
+
+            os.replace(temporary_path, target)
+        finally:
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
+
+    def open_project_file(self, path: str) -> dict:
+        target = Path(path)
+
+        if target.suffix.lower() != ".vforge":
+            raise ValueError("Use a extensão .vforge")
+
+        try:
+            data = json.loads(target.read_text(encoding="utf-8"))
+        except (UnicodeError, json.JSONDecodeError) as error:
+            raise ValueError("Arquivo .vforge não contém JSON UTF-8 válido") from error
+
+        project = self.open_project(data)
+
+        return project
 
     def create_node(
         self,

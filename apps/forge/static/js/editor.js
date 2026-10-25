@@ -1,3 +1,4 @@
+import {setupProjectActions} from "./components/project.js";
 import {
     getGraph,
     createNode,
@@ -5,6 +6,7 @@ import {
     deleteConnection,
     createConnection,
     updateNode,
+    getProject,
 } from "./api.js";
 
 
@@ -58,6 +60,7 @@ async function bootstrap() {
     setupConnectionDeletion();
     setupNodeMovement();
     setupPropertyEditing();
+    setupProjectActions(refreshGraph, logConsole);
 
     await refreshGraph();
 
@@ -92,6 +95,9 @@ async function refreshGraph() {
         renderForgeIR();
 
         updateStatusBar();
+
+        const project = await getProject();
+        document.querySelector("#vf-project-name").textContent = project.metadata.name;
 
     } catch (error) {
         console.error(
