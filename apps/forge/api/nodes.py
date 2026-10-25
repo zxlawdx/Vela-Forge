@@ -6,10 +6,13 @@ from apps.forge.services.forge_service import forge_service
 
 @api.post("/forge/nodes")
 def create_node(data: dict):
-    return forge_service.create_node(
+    node = forge_service.create_node(
         node_type=data["type"],
         properties=data.get("properties"),
     )
+
+
+    return forge_service.get_node(node.id)
 
 
 @api.delete("/forge/nodes/<node_id>")
@@ -32,4 +35,9 @@ def update_node(request: Request):
         data,
     )
 
-    return node
+    return forge_service.get_node(node.id)
+
+
+@api.get("/forge/node-types")
+def get_node_types():
+    return forge_service.get_node_types()

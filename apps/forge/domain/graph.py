@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from math import isfinite
 
 from .nodes import Node
+from .registry import get_node_type, node_ports, validate_properties
 from .connections import Connection
 
 
@@ -13,6 +14,8 @@ class Graph:
     def add_node(self, node: Node) -> None:
         if node.id in self.nodes:
             raise ValueError(f"Node '{node.id}' já existe")
+
+        get_node_type(node.type)
 
         self.nodes[node.id] = node
 
@@ -60,7 +63,19 @@ class Graph:
         if not isinstance(properties, dict):
             raise ValueError("Propriedades devem ser um objeto")
 
-        node.properties.update(properties)
+        updated = {**node.properties, **properties}
+        validate_properties(node.type, updated)
+        ports = node_ports(node.type, updated)
+        output_names = [port["name"] for port in ports["outputs"]]
+
+        for connection in self.connections.values():
+            if (
+                connection.source_node_id == node_id
+                and connection.source_port not in output_names
+            ):
+                raise ValueError("Remova a connection antes de remover sua saída")
+
+        node.properties = updated
 
         return node
 
@@ -101,11 +116,24 @@ class Graph:
         if connection.source_node_id == connection.target_node_id:
             raise ValueError("Self-connection não é permitida")
 
-        if connection.source_port != "out":
-            raise ValueError("Port de origem deve ser 'out'")
+        source = self.nodes[connection.source_node_id]
+        target = self.nodes[connection.target_node_id]
+        source_ports = node_ports(source.type, source.properties)["outputs"]
+        target_ports = node_ports(target.type, target.properties)["inputs"]
+        output = next(
+            (port for port in source_ports if port["name"] == connection.source_port),
+            None,
+        )
+        input_port = next(
+            (port for port in target_ports if port["name"] == connection.target_port),
+            None,
+        )
 
-        if connection.target_port != "in":
-            raise ValueError("Port de destino deve ser 'in'")
+        if output is None or input_port is None:
+            raise ValueError("Port ou direção inválida para o tipo de node")
+
+        if output["type"] != input_port["type"]:
+            raise ValueError("Tipos de ports incompatíveis")
 
         self.connections[connection.id] = connection
 
@@ -138,6 +166,7 @@ class Graph:
                     "type": node.type,
                     "properties": node.properties,
                     "position": node.position,
+                    "ports": node_ports(node.type, node.properties),
                 }
                 for node in self.nodes.values()
             ],

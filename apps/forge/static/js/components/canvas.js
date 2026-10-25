@@ -235,6 +235,9 @@ function createNodeElement(
     article.dataset.type =
         node.type;
 
+    const portCount = Math.max(node.ports.inputs.length, node.ports.outputs.length);
+    article.style.minHeight = `${80 + portCount * 22}px`;
+
 
     article.style.left =
         `${position.x}px`;
@@ -298,20 +301,7 @@ function createNodeElement(
         </footer>
 
 
-        <span
-            class="vf-socket vf-socket--in"
-            data-port="in"
-            data-direction="in"
-            title="Input"
-        ></span>
-
-
-        <span
-            class="vf-socket vf-socket--out"
-            data-port="out"
-            data-direction="out"
-            title="Output"
-        ></span>
+        ${renderSockets(node)}
     `;
 
 
@@ -414,6 +404,32 @@ function createNodeElement(
 /* =========================================================
    NODE CONTENT
    ========================================================= */
+
+function renderSockets(node) {
+    const sockets = [];
+
+    for (const direction of ["in", "out"]) {
+        const ports = direction === "in"
+            ? node.ports.inputs
+            : node.ports.outputs;
+
+        ports.forEach((port, index) => {
+            sockets.push(`
+                <span
+                    class="vf-socket vf-socket--${direction}"
+                    data-port="${escapeHtml(port.name)}"
+                    data-direction="${direction}"
+                    data-port-type="${escapeHtml(port.type)}"
+                    style="top: ${45 + index * 22}px"
+                    title="${escapeHtml(port.name)} (${escapeHtml(port.type)})"
+                ></span>
+            `);
+        });
+    }
+
+    return sockets.join("");
+}
+
 
 function renderNodeProperties(
     node

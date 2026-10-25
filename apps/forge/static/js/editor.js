@@ -192,7 +192,7 @@ async function createNodeByType(
         const node =
             await createNode(
                 type,
-                defaultProperties(type)
+                {}
             );
 
 
@@ -491,67 +491,6 @@ function logConsole(
 /* =========================================================
    DEFAULT NODE PROPERTIES
    ========================================================= */
-
-function defaultProperties(
-    type
-) {
-    switch (type) {
-
-        case "start":
-            return {
-                trigger:
-                    "scene_ready",
-            };
-
-
-        case "dialogue":
-            return {
-                actor:
-                    "Penguin",
-
-                text:
-                    "Novo diálogo",
-            };
-
-
-        case "choice":
-            return {
-                choices: [
-                    "Opção A",
-                    "Opção B",
-                ],
-            };
-
-
-        case "branch":
-            return {
-                condition: "",
-            };
-
-
-        case "set-variable":
-            return {
-                variable: "",
-                value: "",
-            };
-
-
-        case "event":
-            return {
-                event:
-                    "new_event",
-            };
-
-
-        case "end":
-            return {};
-
-
-        default:
-            return {};
-    }
-}
-
 
 /* =========================================================
    START

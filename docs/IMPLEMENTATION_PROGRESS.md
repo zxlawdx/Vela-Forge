@@ -88,3 +88,12 @@ Next: **#4**, after verifying the browser acceptance criteria for this increment
 Then #11, #12, #5, #6, #7, #8, #13, #9, #10 and #14.
 These issues have not been implemented in this increment. No placeholder
 exporters, persistence layer or event system was introduced.
+
+## Issue #4 — registry and typed ports
+
+Definitions now live in domain/registry.py. The service applies independent
+copies of defaults and rejects unknown types. Graph serializes derived flow
+ports for the canvas. Start has no input, End has no output, Branch exposes
+true/false, and Choice derives one choice_N output per option. Removing an option
+with an attached connection is rejected until that connection is removed.
+The frontend no longer declares default properties or hardcodes in/out sockets.

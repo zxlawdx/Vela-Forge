@@ -84,3 +84,14 @@ def test_api_rejects_self_connection(client):
 
     assert status == 400
     assert client("GET", "/graph")[1]["connections"] == []
+
+
+def test_registry_drives_serialized_ports(client):
+    status, types = client("GET", "/node-types")
+    assert status == 200
+    assert types["start"]["inputs"] == []
+
+    status, node = client("POST", "/nodes", {"type": "branch"})
+    assert status == 200
+    assert [port["name"] for port in node["ports"]["outputs"]] == ["true", "false"]
+    assert client("GET", "/graph")[1]["nodes"][0]["ports"] == node["ports"]

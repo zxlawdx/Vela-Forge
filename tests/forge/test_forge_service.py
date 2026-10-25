@@ -111,4 +111,4 @@ def test_invalid_property_patch_is_atomic():
         })
 
     assert node.position == position
-    assert node.properties == {}
+    assert node.properties == {"actor": "", "text": "Novo diálogo"}
