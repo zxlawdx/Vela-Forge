@@ -1211,10 +1211,11 @@ function updateConnectionPreview(
         );
 
 
-    updatePreviewPath(
-        pendingConnection.start,
-        mouse
-    );
+    if (pendingConnection.endpoint === "source") {
+        updatePreviewPath(mouse, pendingConnection.start);
+    } else {
+        updatePreviewPath(pendingConnection.start, mouse);
+    }
 
 
     clearConnectionTarget();
@@ -1230,7 +1231,7 @@ function updateConnectionPreview(
     const targetSocket =
         element
             ?.closest?.(
-                '.vf-socket[data-direction="in"]'
+                `.vf-socket[data-direction="${pendingConnection.endpoint === "source" ? "out" : "in"}"]`
             );
 
 
@@ -1250,7 +1251,9 @@ function updateConnectionPreview(
      */
     if (
         targetNode?.dataset.nodeId ===
-        pendingConnection.sourceNodeId
+        (pendingConnection.endpoint === "source"
+            ? pendingConnection.targetNodeId
+            : pendingConnection.sourceNodeId)
     ) {
         return;
     }
@@ -1266,100 +1269,39 @@ function updateConnectionPreview(
    FINISH CONNECTION
    ========================================================= */
 
-function finishConnection(
-    event
-) {
-    if (
-        !pendingConnection ||
-        event.pointerId !== pendingConnection.pointerId
-    ) {
+function finishConnection(event) {
+    if (!pendingConnection || event.pointerId !== pendingConnection.pointerId) {
         return;
     }
 
+    const direction = pendingConnection.endpoint === "source" ? "out" : "in";
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const socket = element?.closest(`.vf-socket[data-direction="${direction}"]`);
+    const nodeId = socket?.closest(".vf-node")?.dataset.nodeId;
+    const fixedNodeId = pendingConnection.endpoint === "source"
+        ? pendingConnection.targetNodeId
+        : pendingConnection.sourceNodeId;
 
-    /*
-     * IMPORTANTE:
-     *
-     * Como usamos Pointer Capture,
-     * event.target pode continuar sendo
-     * o socket de origem.
-     *
-     * Por isso usamos elementFromPoint().
-     */
-    const element =
-        document.elementFromPoint(
-            event.clientX,
-            event.clientY
-        );
+    if (socket && nodeId && nodeId !== fixedNodeId) {
+        if (pendingConnection.connectionId) {
+            const changes = pendingConnection.endpoint === "source"
+                ? {source_node_id: nodeId, source_port: socket.dataset.port}
+                : {target_node_id: nodeId, target_port: socket.dataset.port};
 
-
-    const targetSocket =
-        element
-            ?.closest?.(
-                '.vf-socket[data-direction="in"]'
-            );
-
-
-    if (targetSocket) {
-        const targetNode =
-            targetSocket.closest(
-                ".vf-node"
-            );
-
-
-        const targetNodeId =
-            targetNode
-                ?.dataset
-                .nodeId;
-
-
-        const targetPort =
-            targetSocket
-                .dataset
-                .port;
-
-
-        if (
-            targetNodeId &&
-            targetNodeId !==
-                pendingConnection
-                    .sourceNodeId
-        ) {
-            const detail = {
-                sourceNodeId:
-                    pendingConnection
-                        .sourceNodeId,
-
-                sourcePort:
-                    pendingConnection
-                        .sourcePort,
-
-                targetNodeId,
-
-                targetPort,
-            };
-
-
-            console.log(
-                "[Forge] Connection request:",
-                detail
-            );
-
-
-            document.dispatchEvent(
-                new CustomEvent(
-                    "forge:connection-request",
-                    {
-                        detail,
-                    }
-                )
-            );
+            document.dispatchEvent(new CustomEvent("forge:connection-reconnect", {
+                detail: {connectionId: pendingConnection.connectionId, changes},
+            }));
+        } else {
+            document.dispatchEvent(new CustomEvent("forge:connection-request", {
+                detail: {
+                    sourceNodeId: pendingConnection.sourceNodeId,
+                    sourcePort: pendingConnection.sourcePort,
+                    targetNodeId: nodeId,
+                    targetPort: socket.dataset.port,
+                },
+            }));
         }
     }
-
-
-    releaseConnectionPointer();
-
 
     cancelPendingConnection();
 }
@@ -1401,7 +1343,11 @@ function releaseConnectionPointer() {
    CANCEL CONNECTION
    ========================================================= */
 
-function cancelPendingConnection() {
+function cancelPendingConnection(event) {
+    if (event?.pointerId !== undefined && pendingConnection?.pointerId !== event.pointerId) {
+        return;
+    }
+
     releaseConnectionPointer();
 
     if (
@@ -1426,6 +1372,7 @@ function cancelPendingConnection() {
 
 
     clearConnectionTarget();
+    drawConnections();
 }
 
 
@@ -1476,7 +1423,7 @@ export function drawConnections() {
      */
     svg
         .querySelectorAll(
-            ".vf-wire:not(.vf-wire--preview)"
+            ".vf-wire:not(.vf-wire--preview), .vf-connection-handle"
         )
         .forEach(
             (wire) => {
@@ -1737,6 +1684,22 @@ function drawWire(
     svg.appendChild(
         path
     );
+
+    if (connection?.id === state.selectedConnectionId) {
+        for (const [endpoint, point] of [["source", start], ["target", end]]) {
+            const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            handle.setAttribute("class", "vf-connection-handle");
+            handle.setAttribute("cx", point.x);
+            handle.setAttribute("cy", point.y);
+            handle.setAttribute("r", "7");
+            handle.dataset.endpoint = endpoint;
+            handle.dataset.connectionId = connection.id;
+            handle.addEventListener("pointerdown", (event) => {
+                beginReconnection(event, connection, endpoint);
+            });
+            svg.appendChild(handle);
+        }
+    }
 }
 
 
@@ -2015,4 +1978,31 @@ function setupNodeDrop() {
             })
         );
     });
+}
+
+
+function beginReconnection(event, connection, endpoint) {
+    const nodeId = endpoint === "source" ? connection.target_node_id : connection.source_node_id;
+    const port = endpoint === "source" ? connection.target_port : connection.source_port;
+    const direction = endpoint === "source" ? "in" : "out";
+    const node = findNodeElement(nodeId);
+    const socket = findSocket(node, port, direction);
+
+    beginConnection(event, node, socket);
+
+    if (!pendingConnection) {
+        return;
+    }
+
+    pendingConnection.connectionId = connection.id;
+    pendingConnection.endpoint = endpoint;
+    pendingConnection.sourceNodeId = connection.source_node_id;
+    pendingConnection.sourcePort = connection.source_port;
+    pendingConnection.targetNodeId = connection.target_node_id;
+
+    for (const path of svg.querySelectorAll(".vf-wire:not(.vf-wire--preview)")) {
+        if (path.dataset.connectionId === connection.id) {
+            path.style.opacity = "0.25";
+        }
+    }
 }

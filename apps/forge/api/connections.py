@@ -28,3 +28,11 @@ def delete_connection(request: Request):
     forge_service.delete_connection(connection_id)
 
     return {"deleted": connection_id}
+
+
+@api.patch("/forge/connections/<connection_id>")
+def reconnect_connection(request: Request):
+    connection_id = request.path_params["connection_id"]
+    connection = forge_service.reconnect_connection(connection_id, request.json)
+
+    return connection

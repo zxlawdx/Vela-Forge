@@ -256,3 +256,17 @@ export async function resetEditorState() {
 
     return parseResponse(response);
 }
+
+
+export async function reconnectConnection(connectionId, changes) {
+    const response = await fetch(
+        `${API_BASE}/connections/${encodeURIComponent(connectionId)}`,
+        {
+            method: "PATCH",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(changes),
+        }
+    );
+
+    return parseResponse(response);
+}

@@ -11,6 +11,7 @@ import {
     deleteNode,
     deleteConnection,
     createConnection,
+    reconnectConnection,
     updateNode,
     getProject,
     getProblems,
@@ -67,6 +68,15 @@ async function bootstrap() {
     setupRefresh();
 
     setupConnectionCreation();
+
+    document.addEventListener("forge:connection-reconnect", async (event) => {
+        try {
+            await reconnectConnection(event.detail.connectionId, event.detail.changes);
+            await refreshGraph();
+        } catch (error) {
+            logConsole(`Erro ao reconectar: ${error.message}`);
+        }
+    });
     setupConnectionDeletion();
     setupNodeMovement();
     setupPropertyEditing();

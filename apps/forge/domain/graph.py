@@ -103,6 +103,20 @@ class Graph:
                 f"Connection '{connection.id}' já existe"
             )
 
+        self.validate_connection(connection)
+        self.connections[connection.id] = connection
+
+    def validate_connection(self, connection: Connection) -> None:
+        fields = (
+            connection.source_node_id,
+            connection.source_port,
+            connection.target_node_id,
+            connection.target_port,
+        )
+
+        if any(not isinstance(value, str) or not value for value in fields):
+            raise ValueError("Endpoints e ports devem ser textos não vazios")
+
         if connection.source_node_id not in self.nodes:
             raise ValueError(
                 f"Node de origem '{connection.source_node_id}' não existe"
@@ -135,7 +149,35 @@ class Graph:
         if output["type"] != input_port["type"]:
             raise ValueError("Tipos de ports incompatíveis")
 
-        self.connections[connection.id] = connection
+
+    def get_connection(self, connection_id: str) -> Connection:
+        if connection_id not in self.connections:
+            raise ValueError(f"Connection '{connection_id}' não existe")
+
+        return self.connections[connection_id]
+
+    def reconnect(self, connection_id: str, changes: dict) -> Connection:
+        connection = self.get_connection(connection_id)
+        fields = {"source_node_id", "source_port", "target_node_id", "target_port"}
+
+        if not isinstance(changes, dict) or not changes or set(changes) - fields:
+            raise ValueError("Informe apenas endpoints e ports da connection")
+
+        candidate = Connection(
+            id=connection.id,
+            source_node_id=changes.get("source_node_id", connection.source_node_id),
+            source_port=changes.get("source_port", connection.source_port),
+            target_node_id=changes.get("target_node_id", connection.target_node_id),
+            target_port=changes.get("target_port", connection.target_port),
+        )
+        self.validate_connection(candidate)
+
+        connection.source_node_id = candidate.source_node_id
+        connection.source_port = candidate.source_port
+        connection.target_node_id = candidate.target_node_id
+        connection.target_port = candidate.target_port
+
+        return connection
 
     def disconnect(self, connection_id: str) -> None:
         if connection_id not in self.connections:

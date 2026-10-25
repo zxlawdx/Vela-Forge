@@ -2295,3 +2295,16 @@
     display: block;
     margin: 10px 0;
 }
+
+
+#vf-connections {
+    z-index: 4;
+}
+
+.vf-connection-handle {
+    fill: var(--vf-panel);
+    stroke: var(--vf-yellow);
+    stroke-width: 2;
+    pointer-events: all;
+    cursor: crosshair;
+}

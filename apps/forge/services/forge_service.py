@@ -351,6 +351,13 @@ class ForgeService:
     def get_graph(self) -> dict:
         return self.graph.to_dict()
 
+    def reconnect_connection(self, connection_id: str, changes: dict) -> Connection:
+        before = self.get_project()
+        connection = self.graph.reconnect(connection_id, changes)
+        self.history.record("Reconnect connection", before, self.get_project())
+
+        return connection
+
     def delete_connection(self, connection_id: str) -> None:
         before = self.get_project()
 

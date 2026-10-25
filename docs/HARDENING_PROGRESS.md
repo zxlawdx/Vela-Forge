@@ -27,3 +27,13 @@ overwrite, atomic-save permission failure/cleanup, both native export directory
 contracts and recents recording. Image import remains the WebView's file input
 and is covered by the real browser regression. Added Windows/Linux CI for these
 contracts; a CI job is not a claim of an interactive Windows smoke test.
+
+## Connection endpoint reconnection
+
+Selected wires expose source/target handles. Dragging a handle previews a new
+wire; valid release calls PATCH through editor.js/api.js/service/Graph. Graph
+validates a candidate with the same typed-port rules before touching the existing
+Connection. ID and object identity are preserved. One command records a successful
+reconnection. Cancel/Escape/invalid direction/self-drop leave backend and history
+unchanged. Domain, service, HTTP and real browser tests cover both endpoints,
+invalid changes, cancellation, ID stability and undo/redo.
