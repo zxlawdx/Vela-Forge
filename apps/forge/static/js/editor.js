@@ -1,3 +1,4 @@
+import {renderProblems} from "./components/problems.js";
 import {setupProjectActions} from "./components/project.js";
 import {
     getGraph,
@@ -7,6 +8,7 @@ import {
     createConnection,
     updateNode,
     getProject,
+    getProblems,
 } from "./api.js";
 
 
@@ -62,6 +64,22 @@ async function bootstrap() {
     setupPropertyEditing();
     setupProjectActions(refreshGraph, logConsole);
 
+    document.querySelector("#vf-preview-project").addEventListener("click", async () => {
+        try {
+            const problems = await getProblems();
+            renderProblems(problems);
+
+            if (problems.some(problem => problem.severity === "error")) {
+                document.querySelector('[data-tab="problems"]').click();
+                logConsole("Corrija os erros em Problems antes do preview/export.");
+            } else {
+                logConsole("Graph válido. Selecione um asset para visualizar no Scene Preview.");
+            }
+        } catch (error) {
+            logConsole(`Erro na validação: ${error.message}`);
+        }
+    });
+
     await refreshGraph();
 
     renderInspector();
@@ -95,6 +113,9 @@ async function refreshGraph() {
         renderForgeIR();
 
         updateStatusBar();
+
+        const problems = await getProblems();
+        renderProblems(problems);
 
         const project = await getProject();
         document.querySelector("#vf-project-name").textContent = project.metadata.name;

@@ -90,6 +90,17 @@ export function setupCanvas() {
 
     setupNodeDrop();
 
+    document.addEventListener("forge:select-node", (event) => {
+        const node = findNodeElement(event.detail);
+
+        if (node) {
+            setSelectedNode(node, event.detail);
+            state.viewport.x = workspace.clientWidth / 2 - node.offsetLeft * state.viewport.zoom;
+            state.viewport.y = workspace.clientHeight / 2 - node.offsetTop * state.viewport.zoom;
+            applyViewport();
+        }
+    });
+
     applyViewport();
 
 

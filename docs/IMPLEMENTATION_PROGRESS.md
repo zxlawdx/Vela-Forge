@@ -120,3 +120,12 @@ validates a separate Graph before replacing the active project. Native open/save
 use pywebview's public file dialogs through the consumer bridge; files are written
 with atomic replacement. Browser testing uses upload/download as a fallback.
 Save, Open and New actions are connected. Invalid files preserve the current graph.
+
+## Issue #6 — validator and Problems
+
+A separate validator returns severity/code/message/node/connection records. It
+checks duplicate IDs, endpoints, registry ports, Start count, required fields,
+ambiguous outputs and reachability. Missing End, unreachable nodes and dangling
+outputs are warnings. Problems is refreshed from the API, supports selecting a
+related node and gates the Preview action on fatal errors. Exporters consume the
+same validator when implemented. Traversal terminates even for cyclic graphs.

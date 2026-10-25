@@ -2233,3 +2233,22 @@
     stroke: var(--vf-yellow);
     stroke-width: 4;
 }
+
+
+.vf-problem {
+    display: block;
+    width: 100%;
+    padding: 6px;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+}
+
+.vf-problem--error {
+    color: var(--vf-red) !important;
+}
+
+.vf-problem--warning {
+    color: var(--vf-yellow) !important;
+}

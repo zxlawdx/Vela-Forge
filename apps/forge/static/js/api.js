@@ -146,3 +146,10 @@ export async function renameProject(name) {
 
     return parseResponse(response);
 }
+
+
+export async function getProblems() {
+    const response = await fetch(`${API_BASE}/problems`);
+
+    return parseResponse(response);
+}

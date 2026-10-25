@@ -8,3 +8,8 @@ from apps.forge.services.forge_service import forge_service
 def get_graph():
     return forge_service.get_graph()
 
+
+
+@api.get("/forge/problems")
+def get_problems():
+    return forge_service.validate()

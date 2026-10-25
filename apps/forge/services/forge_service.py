@@ -8,6 +8,7 @@ from apps.forge.domain.connections import Connection
 from apps.forge.domain.graph import Graph
 from apps.forge.domain.nodes import Node
 from apps.forge.domain.project import parse_project, serialize_project
+from apps.forge.services.validator import validate_graph
 from apps.forge.domain.registry import NODE_TYPES, default_properties, validate_properties
 
 
@@ -15,6 +16,11 @@ class ForgeService:
     def __init__(self):
         self.graph = Graph()
         self.metadata = {"name": "untitled"}
+
+    def validate(self) -> list[dict]:
+        problems = validate_graph(self.graph.to_dict())
+
+        return problems
 
     def get_project(self) -> dict:
         project = serialize_project(self.graph, self.metadata)
