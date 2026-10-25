@@ -70,6 +70,35 @@ const {chromium} = require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES
         await page.waitForFunction(id => JSON.parse(document.querySelector("#vf-ir-output").textContent).connections[0].target_node_id === id, nodes[2].id);
         await page.keyboard.press("Control+y");
         await page.waitForFunction(id => JSON.parse(document.querySelector("#vf-ir-output").textContent).connections[0].source_node_id === id, nodes[3].id);
+        await page.click('[data-action="configuration"]');
+        await page.locator('[data-workspace="inspectorSide"]').selectOption("left");
+        await page.locator('[data-workspace="bottomPosition"]').selectOption("top");
+        await page.locator("dialog button").first().click();
+        const sidebar = await page.locator("#vf-left-resizer").boundingBox();
+        await page.mouse.move(sidebar.x + 2, sidebar.y + 50);
+        await page.mouse.down();
+        await page.mouse.move(sidebar.x + 42, sidebar.y + 50, {steps: 5});
+        await page.mouse.up();
+        await page.click('[data-mode="event"]');
+        await page.click('[data-tab="console"]');
+        await page.waitForFunction(async () => {
+            const prefs = await (await fetch("/api/forge/preferences")).json();
+            return prefs.workspace.inspectorSide === "left" && prefs.workspace.bottomPosition === "top"
+                && prefs.workspace.leftWidth > 250 && prefs.workspace.mode === "event"
+                && prefs.workspace.activeBottomTab === "console";
+        });
+        await page.reload();
+        await page.waitForFunction(() => document.querySelector("#vf-console")?.textContent.includes("iniciado"));
+        assert.equal(await page.locator(".vf-app.inspector-left").count(), 1);
+        assert.equal(await page.locator(".vf-main-pane.bottom-top").count(), 1);
+        assert.equal(await page.locator('[data-mode="event"]').getAttribute("class"), "active");
+        assert.equal(await page.locator('[data-tab="console"]').getAttribute("aria-selected"), "true");
+        await page.click('[data-action="configuration"]');
+        await page.click('[data-action="restore-layout"]');
+        await page.waitForFunction(() => !document.querySelector(".inspector-left"));
+        assert.equal(await page.locator(".bottom-top").count(), 0);
+        console.log("PASS: centralized workspace persistence, placement, sidebar resize and default restore");
+
         const preview = await page.evaluate(async () => {
             const {renderAssetPreview, previewRenderers} = await import("/__vela__/static/forge/js/components/preview.js");
             const layer = document.createElement("div");

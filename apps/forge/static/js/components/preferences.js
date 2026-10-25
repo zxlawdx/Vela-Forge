@@ -90,6 +90,45 @@ export async function setupPreferences(refreshGraph, logConsole) {
                     }
                 });
 
+                for (const [key, labelText, options] of [
+                    ["inspectorSide", "Inspector", [["right", "Direita"], ["left", "Esquerda"]]],
+                    ["bottomPosition", "Painel de resultados", [["bottom", "Embaixo"], ["top", "Em cima"]]],
+                ]) {
+                    const label = document.createElement("label");
+                    label.textContent = labelText;
+                    const select = document.createElement("select");
+                    select.dataset.workspace = key;
+
+                    for (const [value, text] of options) {
+                        select.add(new Option(text, value));
+                    }
+
+                    select.value = preferences.workspace[key];
+                    select.addEventListener("change", () => {
+                        document.dispatchEvent(new CustomEvent("forge:workspace-change", {detail: {[key]: select.value}}));
+                    });
+                    label.appendChild(select);
+                    dialog.appendChild(label);
+                }
+
+                const saveLayout = document.createElement("button");
+                saveLayout.textContent = "Salvar layout";
+                saveLayout.addEventListener("click", () => document.dispatchEvent(new CustomEvent("forge:workspace-save")));
+                dialog.appendChild(saveLayout);
+                const restoreLayout = document.createElement("button");
+                restoreLayout.textContent = "Restaurar layout padrão";
+                restoreLayout.dataset.action = "restore-layout";
+                restoreLayout.addEventListener("click", async () => {
+                    try {
+                        const result = await updatePreferences({workspace: {}});
+                        document.dispatchEvent(new CustomEvent("forge:workspace-restore", {detail: result.workspace}));
+                        dialog.close();
+                    } catch (error) {
+                        logConsole(`Erro ao restaurar layout: ${error.message}`);
+                    }
+                });
+                dialog.appendChild(restoreLayout);
+
                 const reset = document.createElement("button");
                 reset.textContent = "Limpar recentes e restaurar preferências";
                 reset.addEventListener("click", async () => {
@@ -97,6 +136,8 @@ export async function setupPreferences(refreshGraph, logConsole) {
                         try {
                             await resetEditorState();
                             await loadPreferences();
+                            const result = await getPreferences();
+                            document.dispatchEvent(new CustomEvent("forge:workspace-restore", {detail: result.workspace}));
                             dialog.close();
                         } catch (error) {
                             logConsole(`Erro ao restaurar preferências: ${error.message}`);

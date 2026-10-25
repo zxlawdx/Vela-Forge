@@ -67,3 +67,14 @@ renderer owns cleanup/error handling, preventing an old image callback from
 replacing a newer preview. PNG/JPEG/GIF/WebP continue to work in the browser.
 Missing data and unsupported renderer types are explicit; GLB/glTF are not yet
 accepted or advertised because no actual model renderer has been added.
+
+## Central workspace state
+
+Workspace dimensions, collapsed states, active mode/tab and placements now share
+one validated SQLite preference record. Legacy localStorage is migrated once.
+Added sidebar resize, Inspector left/right, results panel top/bottom, save layout
+and restore defaults. Saves are serialized and occur after resize, not per pixel.
+No second project history or full docking framework was introduced. Fixed an
+existing collapse bug where an inline height overrode the collapsed CSS value.
+Browser checks verify placement, resize, reload persistence and default restore;
+backend tests reject invalid dimensions/enums and verify restart/reset behavior.

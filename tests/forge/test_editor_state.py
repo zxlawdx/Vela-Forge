@@ -1,6 +1,6 @@
 import pytest
 
-from apps.forge.services.editor_state import EditorState
+from apps.forge.services.editor_state import EditorState, DEFAULT_PREFERENCES
 from apps.forge.services.forge_service import ForgeService
 
 
@@ -22,7 +22,7 @@ def test_preferences_recents_restart_and_reset(tmp_path):
 
     restarted.reset()
     assert restarted.recents() == []
-    assert restarted.preferences() == {"target": "godot", "show_grid": True}
+    assert restarted.preferences() == DEFAULT_PREFERENCES
     assert path.read_bytes() == content
     assert len(service.graph.nodes) == 1
 

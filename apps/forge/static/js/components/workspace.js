@@ -1,25 +1,53 @@
+import {getPreferences, updatePreferences} from "../api.js";
+
 const STORAGE_KEY =
     "vela-forge-workspace";
 
 
-const defaults = {
-    mode: "animation",
-
-    previewWidth: 34,
-
-    bottomHeight: 210,
-    bottomCollapsed: false,
-
-    inspectorWidth: 292,
-    inspectorCollapsed: false,
-};
+let config = null;
+let restoring = false;
+let saveQueue = Promise.resolve();
 
 
-let config = loadConfig();
+export async function setupWorkspace() {
+    const preferences = await getPreferences();
+    config = {...preferences.workspace};
 
+    const legacy = localStorage.getItem(STORAGE_KEY);
 
-export function setupWorkspace() {
+    if (legacy) {
+        try {
+            const migrated = await updatePreferences({workspace: {...config, ...JSON.parse(legacy)}});
+            config = migrated.workspace;
+            localStorage.removeItem(STORAGE_KEY);
+        } catch (error) {
+            console.warn("Legacy workspace not migrated:", error.message);
+        }
+    }
+
     createInspectorResizer();
+    setupSidebarResize();
+
+    document.addEventListener("forge:bottom-tab-change", (event) => {
+        if (config.activeBottomTab !== event.detail.tab) {
+            config.activeBottomTab = event.detail.tab;
+            saveConfig();
+        }
+    });
+
+    document.addEventListener("forge:workspace-change", (event) => {
+        config = {...config, ...event.detail};
+        restoreWorkspace();
+        saveConfig();
+    });
+
+    document.addEventListener("forge:workspace-restore", (event) => {
+        config = {...event.detail};
+        restoreWorkspace();
+    });
+
+    document.addEventListener("forge:workspace-save", saveConfig);
+    window.addEventListener("resize", applyInspectorState);
 
     setupModeTabs();
 
@@ -252,16 +280,16 @@ function setupBottomResize() {
                 main.getBoundingClientRect();
 
 
-            let height =
-                rect.bottom -
-                event.clientY;
+            let height = config.bottomPosition === "top"
+                ? event.clientY - rect.top
+                : rect.bottom - event.clientY;
 
 
             height =
                 clamp(
                     height,
                     70,
-                    rect.height * 0.8
+                    Math.min(800, rect.height * 0.8)
                 );
 
 
@@ -357,12 +385,10 @@ function applyBottomState() {
     );
 
 
-    if (!config.bottomCollapsed) {
-        main.style.setProperty(
-            "--vf-bottom-height",
-            `${config.bottomHeight}px`
-        );
-    }
+    main.style.setProperty(
+        "--vf-bottom-height",
+        `${config.bottomCollapsed ? 0 : config.bottomHeight}px`
+    );
 
 
     const button =
@@ -492,9 +518,9 @@ function setupInspectorResize() {
                 app.getBoundingClientRect();
 
 
-            let width =
-                appRect.right -
-                event.clientX;
+            let width = config.inspectorSide === "left"
+                ? event.clientX - appRect.left - config.leftWidth
+                : appRect.right - event.clientX;
 
 
             width =
@@ -518,8 +544,7 @@ function setupInspectorResize() {
             );
 
 
-            splitter.style.right =
-                `${width}px`;
+            applyInspectorState();
         }
     );
 
@@ -553,54 +578,21 @@ function setupInspectorResize() {
 
 
 function applyInspectorState() {
-    const app =
-        document.querySelector(
-            ".vf-app"
-        );
-
-    const splitter =
-        document.querySelector(
-            "#vf-right-resizer"
-        );
-
-
-    if (!app) {
-        return;
-    }
-
-
-    app.classList.toggle(
-        "inspector-collapsed",
-        config.inspectorCollapsed
-    );
-
-
-    if (
-        config.inspectorCollapsed
-    ) {
-        app.style.setProperty(
-            "--vf-right-width",
-            "0px"
-        );
-
-        if (splitter) {
-            splitter.style.right =
-                "0px";
-        }
-
-        return;
-    }
-
-
-    app.style.setProperty(
-        "--vf-right-width",
-        `${config.inspectorWidth}px`
-    );
-
+    const app = document.querySelector(".vf-app");
+    const splitter = document.querySelector("#vf-right-resizer");
+    const width = config.inspectorCollapsed ? 0 : config.inspectorWidth;
+    app.classList.toggle("inspector-collapsed", config.inspectorCollapsed);
+    app.classList.toggle("inspector-left", config.inspectorSide === "left");
+    app.style.setProperty("--vf-right-width", `${width}px`);
 
     if (splitter) {
-        splitter.style.right =
-            `${config.inspectorWidth}px`;
+        if (config.inspectorSide === "left") {
+            splitter.style.left = `${app.getBoundingClientRect().left + config.leftWidth + width}px`;
+            splitter.style.right = "auto";
+        } else {
+            splitter.style.left = "auto";
+            splitter.style.right = `${width}px`;
+        }
     }
 }
 
@@ -715,6 +707,16 @@ function showGraphInspector() {
    ========================================================= */
 
 function restoreWorkspace() {
+    restoring = true;
+    const app = document.querySelector(".vf-app");
+    app.style.setProperty("--vf-left-width", `${config.leftWidth}px`);
+    document.querySelector(".vf-main-pane").classList.toggle("bottom-top", config.bottomPosition === "top");
+
+    for (const tab of document.querySelectorAll("[data-tab]")) {
+        tab.classList.toggle("active", tab.dataset.tab === config.activeBottomTab);
+    }
+
+    document.querySelector(`[data-tab="${config.activeBottomTab}"]`)?.click();
     setMode(
         config.mode
     );
@@ -751,6 +753,9 @@ function restoreWorkspace() {
     applyBottomState();
 
     applyInspectorState();
+    const sidebarResizer = document.querySelector("#vf-left-resizer");
+    sidebarResizer.style.left = `${app.getBoundingClientRect().left + config.leftWidth}px`;
+    restoring = false;
 }
 
 
@@ -758,42 +763,44 @@ function restoreWorkspace() {
    STORAGE
    ========================================================= */
 
-function loadConfig() {
-    try {
-        const stored =
-            localStorage.getItem(
-                STORAGE_KEY
-            );
-
-
-        if (!stored) {
-            return {
-                ...defaults,
-            };
-        }
-
-
-        return {
-            ...defaults,
-            ...JSON.parse(stored),
-        };
-    } catch {
-        return {
-            ...defaults,
-        };
+function saveConfig() {
+    if (restoring) {
+        return;
     }
+
+    const workspace = {...config};
+    saveQueue = saveQueue.then(() => updatePreferences({workspace})).catch((error) => {
+        document.dispatchEvent(new CustomEvent("forge:error", {detail: `Erro ao salvar layout: ${error.message}`}));
+    });
 }
 
 
-function saveConfig() {
-    try {
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(config)
-        );
-    } catch {
-        /* optional */
-    }
+function setupSidebarResize() {
+    const app = document.querySelector(".vf-app");
+    const splitter = document.createElement("div");
+    splitter.id = "vf-left-resizer";
+    splitter.className = "vf-right-resizer";
+    splitter.title = "Resize sidebar";
+    splitter.style.right = "auto";
+    document.body.appendChild(splitter);
+    splitter.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        splitter.setPointerCapture(event.pointerId);
+    });
+    splitter.addEventListener("pointermove", (event) => {
+        if (!splitter.hasPointerCapture(event.pointerId)) {
+            return;
+        }
+
+        config.leftWidth = clamp(event.clientX - app.getBoundingClientRect().left, 160, 360);
+        app.style.setProperty("--vf-left-width", `${config.leftWidth}px`);
+        splitter.style.left = `${app.getBoundingClientRect().left + config.leftWidth}px`;
+        applyInspectorState();
+    });
+    splitter.addEventListener("pointerup", (event) => {
+        finishPointer(splitter, event);
+        saveConfig();
+    });
 }
 
 

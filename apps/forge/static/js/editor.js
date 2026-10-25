@@ -53,7 +53,7 @@ import {
    ========================================================= */
 
 async function bootstrap() {
-    setupWorkspace();
+    await setupWorkspace();
 
     setupTabs();
     setupCanvas();
