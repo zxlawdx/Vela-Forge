@@ -42,3 +42,13 @@ def test_unknown_type_and_wrong_ports_are_rejected():
         service.create_connection(end.id, "out", start.id, "in")
 
     assert service.graph.connections == {}
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), {"nested": float("nan")}])
+def test_non_finite_properties_are_rejected(value):
+    service = ForgeService()
+
+    with pytest.raises(ValueError, match="JSON finitos"):
+        service.create_node("set-variable", {"value": value})
+
+    assert service.graph.nodes == {}

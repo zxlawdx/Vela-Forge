@@ -87,11 +87,11 @@ export function renderInspector() {
                     const key = field.dataset.property;
                     const previous = node.properties[key];
 
-                    properties[key] = typeof previous === "string"
+                    properties[key] = typeof previous === "string" && !field.hasAttribute("data-json-value")
                         ? field.value
                         : JSON.parse(field.value);
 
-                    if (typeof properties[key] !== typeof previous) {
+                    if (!field.hasAttribute("data-json-value") && typeof properties[key] !== typeof previous) {
                         throw new Error(`Tipo inválido para ${key}`);
                     }
                 }
@@ -133,6 +133,15 @@ function renderProperties(properties = {}, nodeType = "") {
 
     return entries
         .map(([key, value]) => {
+            if (nodeType === "set-variable" && key === "value") {
+                return `
+                    <div class="vf-field">
+                        <label>Value (JSON: true, 123, "texto", null...)</label>
+                        <textarea data-property="value" data-json-value>${escapeHtml(JSON.stringify(value))}</textarea>
+                    </div>
+                `;
+            }
+
             if (nodeType === "event" && key === "event") {
                 const events = [...state.events];
 
@@ -188,6 +197,10 @@ function renderProperties(properties = {}, nodeType = "") {
 
 
 function stringifyValue(value) {
+    if (value === null) {
+        return "null";
+    }
+
     if (
         typeof value === "object" &&
         value !== null

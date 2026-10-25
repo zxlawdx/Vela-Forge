@@ -1,4 +1,5 @@
 from copy import deepcopy
+import json
 
 
 NODE_TYPES = {
@@ -48,7 +49,7 @@ NODE_TYPES = {
 
 
 def get_node_type(node_type: str) -> dict:
-    if node_type not in NODE_TYPES:
+    if not isinstance(node_type, str) or node_type not in NODE_TYPES:
         raise ValueError(f"Tipo de node desconhecido: {node_type}")
 
     return NODE_TYPES[node_type]
@@ -66,6 +67,11 @@ def validate_properties(node_type: str, properties: dict) -> None:
 
     if not isinstance(properties, dict):
         raise ValueError("Propriedades devem ser um objeto")
+
+    try:
+        json.dumps(properties, allow_nan=False)
+    except (TypeError, ValueError) as error:
+        raise ValueError("Propriedades devem conter valores JSON finitos") from error
 
     for name, default in definition["properties"].items():
         if name not in properties:
