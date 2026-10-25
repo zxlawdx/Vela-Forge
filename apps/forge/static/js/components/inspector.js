@@ -96,6 +96,25 @@ export function renderInspector() {
                     }
                 }
 
+                if (node.type === "branch") {
+                    const variable = inspector.querySelector('[data-condition="variable"]').value;
+                    const variableSelect = inspector.querySelector('[data-property="variable"]');
+
+    if (variableSelect) {
+        variableSelect.addEventListener("change", () => {
+            const variable = state.variables.find(item => item.name === variableSelect.value);
+
+            if (variable) {
+                inspector.querySelector('[data-property="value"]').value = JSON.stringify(variable.default);
+            }
+        });
+    }
+
+    const operator = inspector.querySelector('[data-condition="operator"]').value;
+                    const field = inspector.querySelector('[data-condition="value"]');
+                    properties.condition = {variable, operator, value: field.disabled ? null : JSON.parse(field.value)};
+                }
+
                 document.dispatchEvent(
                     new CustomEvent("forge:node-properties-request", {
                         detail: {nodeId: node.id, properties},
@@ -111,12 +130,37 @@ export function renderInspector() {
         }
     );
 
+    const operator = inspector.querySelector('[data-condition="operator"]');
+
+    if (operator) {
+        const updateValueField = () => {
+            inspector.querySelector('[data-condition="value"]').disabled = ["truthy", "falsy"].includes(operator.value);
+        };
+        operator.addEventListener("change", updateValueField);
+        updateValueField();
+    }
+
     inspector.querySelector("#vf-inspector-delete").addEventListener(
         "click",
         () => {
             document.dispatchEvent(new CustomEvent("forge:node-delete-request"));
         }
     );
+}
+
+
+function variableOptions(selected) {
+    const variables = [...state.variables];
+
+    if (selected && !variables.some(variable => variable.name === selected)) {
+        variables.push({name: selected, type: "ausente"});
+    }
+
+    return '<option value="">Selecione uma variável</option>' + variables.map(variable => `
+        <option value="${escapeHtml(variable.name)}" ${variable.name === selected ? "selected" : ""}>
+            ${escapeHtml(variable.name)} (${escapeHtml(variable.type)})
+        </option>
+    `).join("");
 }
 
 
@@ -133,6 +177,30 @@ function renderProperties(properties = {}, nodeType = "") {
 
     return entries
         .map(([key, value]) => {
+            if (nodeType === "branch" && key === "condition") {
+                const operators = state.nodeTypes.branch.condition_operators;
+
+                return `
+                    <div class="vf-field">
+                        <label>Variável</label>
+                        <select data-condition="variable">${variableOptions(value.variable)}</select>
+                        <label>Comparação</label>
+                        <select data-condition="operator">
+                            ${Object.entries(operators).map(([name, label]) => `
+                                <option value="${name}" ${name === value.operator ? "selected" : ""}>${escapeHtml(label)}</option>
+                            `).join("")}
+                        </select>
+                        <label>Valor (JSON: true, 123, "texto")</label>
+                        <input data-condition="value" value="${escapeHtml(JSON.stringify(value.value))}">
+                    </div>
+                `;
+            }
+
+            if (nodeType === "set-variable" && key === "variable") {
+                return `<div class="vf-field"><label>Variável</label>
+                    <select data-property="variable">${variableOptions(value)}</select></div>`;
+            }
+
             if (nodeType === "set-variable" && key === "value") {
                 return `
                     <div class="vf-field">

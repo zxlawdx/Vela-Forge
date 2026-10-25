@@ -32,7 +32,7 @@ export function setupProjectActions(refreshGraph, logConsole) {
     document.addEventListener("click", async (event) => {
         const action = event.target.closest("[data-action]")?.dataset.action;
 
-        if (!["save-project", "open-project", "new-project"].includes(action)) {
+        if (!["save-project", "save-project-as", "open-project", "new-project"].includes(action)) {
             return;
         }
 
@@ -66,18 +66,11 @@ export function setupProjectActions(refreshGraph, logConsole) {
                 }
             }
 
-            if (action === "save-project") {
-                const current = await getProject();
-                const name = window.prompt("Nome do projeto", current.metadata.name);
-
-                if (name === null) {
-                    return;
-                }
-
-                const project = await renameProject(name);
-
+            if (action === "save-project" || action === "save-project-as") {
                 if (window.pywebview?.api?.save_forge_project) {
-                    const result = await window.pywebview.api.save_forge_project();
+                    const result = await window.pywebview.api.save_forge_project(
+                        action === "save-project-as"
+                    );
 
                     if (result.error) {
                         throw new Error(result.error);
@@ -87,6 +80,14 @@ export function setupProjectActions(refreshGraph, logConsole) {
                         return;
                     }
                 } else {
+                    const current = await getProject();
+                    const name = window.prompt("Nome do projeto", current.metadata.name);
+
+                    if (name === null) {
+                        return;
+                    }
+
+                    const project = await renameProject(name);
                     downloadFile(`${name.replace(/[^a-z0-9_-]/gi, "_")}.vforge`,
                         JSON.stringify(project, null, 2), "application/json");
                 }

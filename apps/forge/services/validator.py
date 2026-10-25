@@ -1,9 +1,15 @@
 from collections import Counter
 
+from apps.forge.domain.conditions import normalize_condition, NUMERIC_OPERATORS
+from apps.forge.domain.variables import validate_variable_value
 from apps.forge.domain.registry import node_ports, validate_properties
 
 
-def validate_graph(graph: dict, events: dict | None = None) -> list[dict]:
+def validate_graph(
+    graph: dict,
+    events: dict | None = None,
+    variables: dict | None = None,
+) -> list[dict]:
     problems = []
     nodes = graph.get("nodes", [])
     connections = graph.get("connections", [])
@@ -49,8 +55,33 @@ def validate_graph(graph: dict, events: dict | None = None) -> list[dict]:
         ):
             report("error", "missing_event", "Evento referenciado não existe", node["id"])
 
+        if node["type"] == "branch":
+            try:
+                normalize_condition(node["properties"].get("condition"), allow_empty_variable=False)
+            except ValueError as error:
+                report("error", "invalid_condition", str(error), node["id"])
+                continue
+
+        if variables is not None and node["type"] in ("branch", "set-variable"):
+            condition = node["properties"].get("condition", {})
+            name = condition.get("variable") if node["type"] == "branch" else node["properties"].get("variable")
+            variable = variables.get(name)
+
+            if variable is None:
+                report("error", "missing_variable", "Variável referenciada não existe", node["id"])
+            else:
+                try:
+                    if node["type"] == "set-variable":
+                        validate_variable_value(variable, node["properties"].get("value"))
+                    elif condition["operator"] not in ("truthy", "falsy"):
+                        validate_variable_value(variable, condition["value"])
+
+                        if condition["operator"] in NUMERIC_OPERATORS and variable.type != "number":
+                            raise ValueError("Comparação ordenada requer variável numérica")
+                except ValueError as error:
+                    report("error", "variable_type", str(error), node["id"])
+
         required = {
-            "branch": "condition",
             "set-variable": "variable",
             "event": "event",
         }.get(node["type"])

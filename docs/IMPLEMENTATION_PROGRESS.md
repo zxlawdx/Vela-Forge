@@ -1,5 +1,8 @@
 # Vela Forge — implementation and verification
 
+This is the PR #16 MVP snapshot. See [HARDENING_PROGRESS.md](HARDENING_PROGRESS.md)
+for subsequent changes and current native/engine verification.
+
 Base: main at f37be82 (merged PR #15). Branch: feat/forge-project-workflow.
 The earlier #2/#1/#3 implementation is preserved, with a browser-discovered
 Inspector delete binding corrected in this increment. No Vela framework source

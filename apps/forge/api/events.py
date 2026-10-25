@@ -20,3 +20,11 @@ def delete_event(request: Request):
     forge_service.delete_event(event_id)
 
     return {"deleted": event_id}
+
+
+@api.patch("/forge/events/<event_id>")
+def rename_event(request: Request):
+    if not isinstance(request.json, dict):
+        raise ValueError("Informe o novo nome do evento")
+
+    return forge_service.rename_event(request.path_params["event_id"], request.json.get("name"))

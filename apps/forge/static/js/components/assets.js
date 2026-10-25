@@ -1,8 +1,10 @@
+import {renderAssetPreview} from "./preview.js";
 import {importAsset} from "../api.js";
 
 
 let selectedAssetId = null;
 let currentAssets = [];
+let disposePreview = () => {};
 
 
 export function setupAssets(refreshGraph, logConsole) {
@@ -64,6 +66,7 @@ export function renderAssets(assets) {
     const list = document.querySelector("#vf-assets");
     const layer = document.querySelector("#vf-preview-layer");
     const empty = document.querySelector("#vf-preview-empty");
+    disposePreview();
     list.replaceChildren();
     layer.replaceChildren();
     empty.hidden = false;
@@ -90,19 +93,6 @@ export function renderAssets(assets) {
         return;
     }
 
-    if (!selected.data) {
-        layer.textContent = `Asset indisponível: ${selected.name}`;
-        empty.style.display = "none";
-        return;
-    }
-
-    const image = document.createElement("img");
-    image.alt = selected.name;
-    image.src = `data:${selected.mime_type};base64,${selected.data}`;
-    image.className = "vf-asset-preview";
-    image.addEventListener("error", () => {
-        layer.textContent = `Não foi possível decodificar a imagem: ${selected.name}`;
-    });
-    layer.appendChild(image);
+    disposePreview = renderAssetPreview(layer, selected);
     empty.style.display = "none";
 }

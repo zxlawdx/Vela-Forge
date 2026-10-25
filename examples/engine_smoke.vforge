@@ -1,0 +1,134 @@
+{
+  "format_version": 1,
+  "metadata": {
+    "name": "Engine smoke"
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "start",
+        "type": "start",
+        "properties": {
+          "trigger": "scene_ready"
+        },
+        "position": {
+          "x": 80,
+          "y": 80
+        }
+      },
+      {
+        "id": "intro",
+        "type": "dialogue",
+        "properties": {
+          "actor": "Guide",
+          "text": "intro"
+        },
+        "position": {
+          "x": 360,
+          "y": 80
+        }
+      },
+      {
+        "id": "branch",
+        "type": "branch",
+        "properties": {
+          "condition": "has_key"
+        },
+        "position": {
+          "x": 640,
+          "y": 80
+        }
+      },
+      {
+        "id": "allowed",
+        "type": "dialogue",
+        "properties": {
+          "actor": "Guide",
+          "text": "allowed"
+        },
+        "position": {
+          "x": 80,
+          "y": 260
+        }
+      },
+      {
+        "id": "emit",
+        "type": "event",
+        "properties": {
+          "event": "smoke_done"
+        },
+        "position": {
+          "x": 360,
+          "y": 260
+        }
+      },
+      {
+        "id": "end",
+        "type": "end",
+        "properties": {},
+        "position": {
+          "x": 640,
+          "y": 260
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "wire_0",
+        "source_node_id": "start",
+        "source_port": "out",
+        "target_node_id": "intro",
+        "target_port": "in"
+      },
+      {
+        "id": "wire_1",
+        "source_node_id": "intro",
+        "source_port": "out",
+        "target_node_id": "branch",
+        "target_port": "in"
+      },
+      {
+        "id": "wire_2",
+        "source_node_id": "branch",
+        "source_port": "true",
+        "target_node_id": "allowed",
+        "target_port": "in"
+      },
+      {
+        "id": "wire_3",
+        "source_node_id": "branch",
+        "source_port": "false",
+        "target_node_id": "end",
+        "target_port": "in"
+      },
+      {
+        "id": "wire_4",
+        "source_node_id": "allowed",
+        "source_port": "out",
+        "target_node_id": "emit",
+        "target_port": "in"
+      },
+      {
+        "id": "wire_5",
+        "source_node_id": "emit",
+        "source_port": "out",
+        "target_node_id": "end",
+        "target_port": "in"
+      }
+    ]
+  },
+  "events": [
+    {
+      "id": "smoke_done",
+      "name": "smoke_done"
+    }
+  ],
+  "assets": [],
+  "variables": [
+    {
+      "name": "has_key",
+      "type": "boolean",
+      "default": false
+    }
+  ]
+}

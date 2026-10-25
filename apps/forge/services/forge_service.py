@@ -3,12 +3,13 @@ from io import BytesIO
 import json
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
 from uuid import uuid4
 
 from apps.forge.exporters import godot, unity
 from apps.forge.domain.assets import Asset, validate_asset
+from apps.forge.domain.conditions import normalize_condition
 from apps.forge.domain.connections import Connection
 from apps.forge.domain.events import Event
 from apps.forge.domain.graph import Graph
@@ -17,6 +18,7 @@ from apps.forge.domain.project import parse_project, serialize_project
 from apps.forge.services.validator import validate_graph
 from apps.forge.services.history import CommandHistory
 from apps.forge.services.editor_state import EditorState
+from apps.forge.domain.variables import Variable, validate_variable
 from apps.forge.domain.registry import NODE_TYPES, default_properties, validate_properties
 
 
@@ -24,10 +26,12 @@ class ForgeService:
     def __init__(self, editor_state: EditorState | None = None):
         self.editor_state = editor_state or EditorState()
         self.history = CommandHistory()
+        self.project_path = None
         self.graph = Graph()
         self.metadata = {"name": "untitled"}
         self.events = {}
         self.assets = {}
+        self.variables = {}
 
     def generate_export(self, engine: str) -> dict:
         problems = self.validate()
@@ -57,16 +61,50 @@ class ForgeService:
 
     def export_directory(self, engine: str, directory: str) -> None:
         result = self.generate_export(engine)
-        target = Path(directory)
-        target.mkdir(parents=True, exist_ok=True)
+        target = Path(directory).resolve()
+        paths = []
 
         for name, content in result["files"].items():
-            path = target / name
+            if (
+                not isinstance(name, str)
+                or not name
+                or "\\" in name
+                or ":" in name
+                or "\x00" in name
+                or Path(name).is_absolute()
+                or PureWindowsPath(name).drive
+                or ".." in Path(name).parts
+                or not isinstance(content, str)
+            ):
+                raise ValueError("Caminho de export inválido")
+
+            path = (target / name).resolve()
+
+            if not path.is_relative_to(target) or path == target:
+                raise ValueError("Export não pode sair do diretório selecionado")
+
+            paths.append((path, content))
+
+        target.mkdir(parents=True, exist_ok=True)
+
+        for path, content in paths:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content, encoding="utf-8")
+            temporary_path = None
+
+            try:
+                with NamedTemporaryFile(
+                    mode="w", encoding="utf-8", dir=path.parent, delete=False,
+                ) as temporary:
+                    temporary_path = Path(temporary.name)
+                    temporary.write(content)
+
+                os.replace(temporary_path, path)
+            finally:
+                if temporary_path is not None:
+                    temporary_path.unlink(missing_ok=True)
 
     def validate(self) -> list[dict]:
-        problems = validate_graph(self.graph.to_dict(), self.events)
+        problems = validate_graph(self.graph.to_dict(), self.events, self.variables)
 
         for asset in self.assets.values():
             if asset.data is None:
@@ -118,6 +156,25 @@ class ForgeService:
 
         return event
 
+    def rename_event(self, event_id: str, name: str) -> Event:
+        if event_id not in self.events:
+            raise ValueError("Evento não existe")
+
+        if not isinstance(name, str) or not name.strip() or len(name) > 128:
+            raise ValueError("Nome de evento deve ter entre 1 e 128 caracteres")
+
+        name = name.strip()
+
+        if any(event.name == name and event.id != event_id for event in self.events.values()):
+            raise ValueError("Já existe um evento com esse nome")
+
+        before = self.get_project()
+        event = self.events[event_id]
+        event.name = name
+        self.history.record("Rename event", before, self.get_project())
+
+        return event
+
     def list_events(self) -> list[dict]:
         events = []
 
@@ -140,20 +197,46 @@ class ForgeService:
         del self.events[event_id]
         self.history.record("Delete event", before, self.get_project())
 
+    def create_variable(self, name: str, variable_type: str, default) -> Variable:
+        variable = Variable(name, variable_type, default)
+        validate_variable(variable)
+
+        if name in self.variables:
+            raise ValueError("Variável já existe")
+
+        before = self.get_project()
+        self.variables[name] = variable
+        self.history.record("Create variable", before, self.get_project())
+
+        return variable
+
+    def list_variables(self) -> list[dict]:
+        return self.get_project()["variables"]
+
+    def delete_variable(self, name: str) -> None:
+        if name not in self.variables:
+            raise ValueError("Variável não existe")
+
+        before = self.get_project()
+        del self.variables[name]
+        self.history.record("Delete variable", before, self.get_project())
+
     def get_project(self) -> dict:
-        project = serialize_project(self.graph, self.metadata, self.events, self.assets)
+        project = serialize_project(self.graph, self.metadata, self.events, self.assets, self.variables)
 
         return project
 
     def _restore_project(self, data: dict) -> None:
-        graph, metadata, events, assets = parse_project(data)
+        graph, metadata, events, assets, variables = parse_project(data)
         self.graph = graph
         self.metadata = metadata
         self.events = events
         self.assets = assets
+        self.variables = variables
 
     def open_project(self, data: dict) -> dict:
         self._restore_project(data)
+        self.project_path = None
         self.history.clear()
 
         return self.get_project()
@@ -169,11 +252,13 @@ class ForgeService:
         return self.get_project()
 
     def new_project(self) -> dict:
+        self.project_path = None
         self.history.clear()
         self.graph = Graph()
         self.metadata = {"name": "untitled"}
         self.events = {}
         self.assets = {}
+        self.variables = {}
 
         return self.get_project()
 
@@ -208,6 +293,7 @@ class ForgeService:
                 temporary.write(content)
 
             os.replace(temporary_path, target)
+            self.project_path = str(target.resolve())
             self.editor_state.remember(str(target), self.metadata["name"])
         finally:
             if temporary_path is not None:
@@ -228,6 +314,7 @@ class ForgeService:
             raise ValueError("Arquivo .vforge não contém JSON UTF-8 válido") from error
 
         project = self.open_project(data)
+        self.project_path = str(target.resolve())
         self.editor_state.remember(str(target), self.metadata["name"])
 
         return project
@@ -259,6 +346,9 @@ class ForgeService:
                 raise ValueError("Propriedades devem ser um objeto")
 
             values.update(properties)
+
+        if node_type == "branch":
+            values["condition"] = normalize_condition(values["condition"])
 
         validate_properties(node_type, values)
 
@@ -345,6 +435,13 @@ class ForgeService:
 
     def get_graph(self) -> dict:
         return self.graph.to_dict()
+
+    def reconnect_connection(self, connection_id: str, changes: dict) -> Connection:
+        before = self.get_project()
+        connection = self.graph.reconnect(connection_id, changes)
+        self.history.record("Reconnect connection", before, self.get_project())
+
+        return connection
 
     def delete_connection(self, connection_id: str) -> None:
         before = self.get_project()

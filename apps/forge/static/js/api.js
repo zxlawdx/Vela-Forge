@@ -256,3 +256,58 @@ export async function resetEditorState() {
 
     return parseResponse(response);
 }
+
+
+export async function reconnectConnection(connectionId, changes) {
+    const response = await fetch(
+        `${API_BASE}/connections/${encodeURIComponent(connectionId)}`,
+        {
+            method: "PATCH",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(changes),
+        }
+    );
+
+    return parseResponse(response);
+}
+
+
+export async function getNodeTypes() {
+    const response = await fetch(`${API_BASE}/node-types`);
+
+    return parseResponse(response);
+}
+
+
+export async function getVariables() {
+    const response = await fetch(`${API_BASE}/variables`);
+
+    return parseResponse(response);
+}
+
+export async function createVariable(variable) {
+    const response = await fetch(`${API_BASE}/variables`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(variable),
+    });
+
+    return parseResponse(response);
+}
+
+export async function deleteVariable(name) {
+    const response = await fetch(`${API_BASE}/variables/${encodeURIComponent(name)}`, {method: "DELETE"});
+
+    return parseResponse(response);
+}
+
+
+export async function renameEvent(eventId, name) {
+    const response = await fetch(`${API_BASE}/events/${encodeURIComponent(eventId)}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name}),
+    });
+
+    return parseResponse(response);
+}

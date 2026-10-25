@@ -45,3 +45,11 @@ def test_validator_terminates_on_cycle():
     service.create_connection(second.id, "out", first.id, "in")
 
     assert any(p["code"] == "missing_end" for p in service.validate())
+
+
+def test_missing_branch_condition_is_reported_without_exception():
+    graph = {"nodes": [{"id": "branch", "type": "branch", "properties": {}}], "connections": []}
+
+    problems = validate_graph(graph)
+
+    assert any(problem["code"] == "invalid_condition" for problem in problems)

@@ -2295,3 +2295,38 @@
     display: block;
     margin: 10px 0;
 }
+
+
+#vf-connections {
+    z-index: 4;
+}
+
+.vf-connection-handle {
+    fill: var(--vf-panel);
+    stroke: var(--vf-yellow);
+    stroke-width: 2;
+    pointer-events: all;
+    cursor: crosshair;
+}
+
+
+.vf-app.inspector-left {
+    grid-template-columns: var(--vf-left-width) var(--vf-right-width) minmax(0, 1fr);
+}
+
+.vf-app.inspector-left .vf-right-pane {
+    grid-column: 2;
+}
+
+.vf-app.inspector-left .vf-main-pane {
+    grid-column: 3;
+}
+
+.vf-main-pane.bottom-top {
+    grid-template-rows: var(--vf-bottom-height) 5px 35px minmax(0, 1fr);
+}
+
+.bottom-top .vf-bottom-pane { grid-row: 1; }
+.bottom-top #vf-bottom-resizer { grid-row: 2; }
+.bottom-top .vf-mode-tabs { grid-row: 3; }
+.bottom-top .vf-mode-stage { grid-row: 4; }

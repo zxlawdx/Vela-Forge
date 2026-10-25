@@ -1,10 +1,14 @@
+from copy import deepcopy
+import json
 from pathlib import Path
 import time
 
 from vela.database import SQLiteStore
 
+from .workspace import DEFAULT_WORKSPACE, validate_workspace
 
-DEFAULT_PREFERENCES = {"target": "godot", "show_grid": True}
+
+DEFAULT_PREFERENCES = {"target": "godot", "show_grid": True, "workspace": DEFAULT_WORKSPACE}
 
 
 class EditorState:
@@ -24,7 +28,7 @@ class EditorState:
         return connection
 
     def preferences(self) -> dict:
-        preferences = DEFAULT_PREFERENCES.copy()
+        preferences = deepcopy(DEFAULT_PREFERENCES)
 
         with self._connect() as connection:
             rows = connection.execute("SELECT key, value FROM preferences").fetchall()
@@ -32,6 +36,11 @@ class EditorState:
         for row in rows:
             if row["key"] == "show_grid":
                 preferences["show_grid"] = row["value"] == "true"
+            elif row["key"] == "workspace":
+                try:
+                    preferences["workspace"] = validate_workspace(json.loads(row["value"]))
+                except (ValueError, TypeError):
+                    preferences["workspace"] = deepcopy(DEFAULT_WORKSPACE)
             elif row["key"] in {"target", "last_project"}:
                 preferences[row["key"]] = row["value"]
 
@@ -50,9 +59,17 @@ class EditorState:
         if "show_grid" in changes and type(changes["show_grid"]) is not bool:
             raise ValueError("show_grid deve ser booleano")
 
+        changes = changes.copy()
+
+        if "workspace" in changes:
+            changes["workspace"] = validate_workspace(changes["workspace"])
+
         with self._connect() as connection:
             for key, value in changes.items():
-                encoded = str(value).lower() if isinstance(value, bool) else value
+                if key == "workspace":
+                    encoded = json.dumps(value)
+                else:
+                    encoded = str(value).lower() if isinstance(value, bool) else value
                 connection.execute(
                     "INSERT INTO preferences(key, value) VALUES (?, ?) "
                     "ON CONFLICT(key) DO UPDATE SET value=excluded.value",

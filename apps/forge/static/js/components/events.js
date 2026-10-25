@@ -1,4 +1,4 @@
-import {createEvent, deleteEvent} from "../api.js";
+import {createEvent, deleteEvent, renameEvent} from "../api.js";
 
 
 export function setupEvents(refreshGraph, logConsole) {
@@ -18,6 +18,23 @@ export function setupEvents(refreshGraph, logConsole) {
     });
 
     document.querySelector("#vf-events").addEventListener("click", async (event) => {
+        const rename = event.target.closest("[data-rename-event]");
+
+        if (rename) {
+            const name = window.prompt("Novo nome do evento", rename.dataset.name);
+
+            if (name !== null) {
+                try {
+                    await renameEvent(rename.dataset.renameEvent, name);
+                    await refreshGraph();
+                } catch (error) {
+                    logConsole(`Erro ao renomear evento: ${error.message}`);
+                }
+            }
+
+            return;
+        }
+
         const eventId = event.target.closest("[data-delete-event]")?.dataset.deleteEvent;
 
         if (!eventId || !window.confirm("Excluir evento? Referências existentes serão sinalizadas em Problems.")) {
@@ -58,6 +75,12 @@ export function renderEvents(events) {
             });
             row.appendChild(usage);
         }
+
+        const rename = document.createElement("button");
+        rename.textContent = "Renomear";
+        rename.dataset.renameEvent = event.id;
+        rename.dataset.name = event.name;
+        row.appendChild(rename);
 
         const remove = document.createElement("button");
         remove.textContent = "Excluir";

@@ -1,6 +1,8 @@
 from copy import deepcopy
 import json
 
+from .conditions import CONDITION_OPERATORS, normalize_condition
+
 
 NODE_TYPES = {
     "start": {
@@ -29,7 +31,8 @@ NODE_TYPES = {
     },
     "branch": {
         "name": "Branch",
-        "properties": {"condition": ""},
+        "properties": {"condition": {"variable": "", "operator": "truthy", "value": None}},
+        "condition_operators": CONDITION_OPERATORS,
         "inputs": ["in"],
         "outputs": ["true", "false"],
     },
@@ -78,6 +81,10 @@ def validate_properties(node_type: str, properties: dict) -> None:
             continue
 
         value = properties[name]
+
+        if node_type == "branch" and name == "condition":
+            normalize_condition(value)
+            continue
 
         if name == "value":
             continue

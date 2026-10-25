@@ -10,6 +10,7 @@ from apps.forge.services.forge_service import ForgeService
 
 def complete_flow():
     service = ForgeService()
+    service.create_variable("allowed", "boolean", True)
     event = service.create_event("greeted")
     start = service.create_node("start")
     set_variable = service.create_node("set-variable", {"variable": "allowed", "value": True})

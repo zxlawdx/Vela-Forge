@@ -21,6 +21,9 @@ func _ready():
     panel.position = Vector2(32, 32)
     panel.custom_minimum_size = Vector2(600, 300)
     add_child(panel)
+    for variable in project.get("variables", []):
+        if not variables.has(variable.name):
+            variables[variable.name] = variable.default
     for item in project.graph.nodes:
         nodes[item.id] = item
     for item in project.graph.nodes:
@@ -60,6 +63,25 @@ func truthy(value):
         return not value.is_empty()
     return true
 
+func condition_matches(condition):
+    var left = variables.get(condition.variable, null)
+    var right = condition.get("value", null)
+    var numeric_left = left is int or left is float
+    var numeric_right = right is int or right is float
+    var equal = false
+    if typeof(left) == typeof(right) or (numeric_left and numeric_right):
+        equal = left == right
+    match condition.operator:
+        "truthy": return truthy(left)
+        "falsy": return not truthy(left)
+        "equals": return equal
+        "not_equals": return not equal
+        "greater_than": return numeric_left and numeric_right and left > right
+        "less_than": return numeric_left and numeric_right and left < right
+        "greater_or_equal": return numeric_left and numeric_right and left >= right
+        "less_or_equal": return numeric_left and numeric_right and left <= right
+    return false
+
 func run_node(node_id):
     clear_panel()
     var steps = 0
@@ -93,7 +115,7 @@ func run_node(node_id):
                 choice_requested.emit(choices)
                 return
             "branch":
-                port = "true" if truthy(variables.get(props.condition, false)) else "false"
+                port = "true" if condition_matches(props.condition) else "false"
             "set-variable":
                 variables[props.variable] = props.get("value", "")
             "event":
@@ -129,7 +151,7 @@ def export_project(project: dict) -> dict[str, str]:
         "README.md": (
             "# Forge export — Godot 4\n\nOpen project.godot in Godot 4 and run the main scene.\n"
             "Dialogue and Choice wait for button input. Start runs on scene ready.\n"
-            "Branch.condition is a variable name, not an expression. Missing variables are false.\n"
+            "Branch.condition uses structured comparisons; no expression evaluation.\n"
             "Set Variable stores JSON values. Events emit event_emitted(id, name).\n"
             "Cycles are limited to 256 automatic steps per interaction.\n"
             "Assets are included in forge_project.json; this starter does not place them in a scene.\n"

@@ -29,7 +29,13 @@ with TemporaryDirectory(prefix="forge-browser-") as directory:
         if ready != "READY":
             raise RuntimeError("Browser test host failed to start: " + ready)
 
-        result = subprocess.run(["node", "tests/browser/editor.cjs"], env=environment)
+        suites = sys.argv[1:] or ["editor.cjs", "hardening.cjs"]
+
+        for suite in suites:
+            result = subprocess.run(["node", str(root / "tests/browser" / suite)], env=environment)
+
+            if result.returncode:
+                break
     finally:
         output, errors = server.communicate("\n", timeout=10)
 

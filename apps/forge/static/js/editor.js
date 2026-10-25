@@ -1,3 +1,4 @@
+import {setupVariables, renderVariables} from "./components/variables.js";
 import {setupPreferences} from "./components/preferences.js";
 import {setupExport} from "./components/export.js";
 import {setupHistory, renderHistory} from "./components/history.js";
@@ -11,12 +12,15 @@ import {
     deleteNode,
     deleteConnection,
     createConnection,
+    reconnectConnection,
     updateNode,
     getProject,
     getProblems,
     getEvents,
     getAssets,
     getHistory,
+    getNodeTypes,
+    getVariables,
 } from "./api.js";
 
 
@@ -52,7 +56,8 @@ import {
    ========================================================= */
 
 async function bootstrap() {
-    setupWorkspace();
+    await setupWorkspace();
+    state.nodeTypes = await getNodeTypes();
 
     setupTabs();
     setupCanvas();
@@ -67,11 +72,21 @@ async function bootstrap() {
     setupRefresh();
 
     setupConnectionCreation();
+
+    document.addEventListener("forge:connection-reconnect", async (event) => {
+        try {
+            await reconnectConnection(event.detail.connectionId, event.detail.changes);
+            await refreshGraph();
+        } catch (error) {
+            logConsole(`Erro ao reconectar: ${error.message}`);
+        }
+    });
     setupConnectionDeletion();
     setupNodeMovement();
     setupPropertyEditing();
     setupProjectActions(refreshGraph, logConsole);
     setupEvents(refreshGraph, logConsole);
+    setupVariables(refreshGraph, logConsole);
     setupAssets(refreshGraph, logConsole);
     setupHistory(refreshGraph, logConsole);
     setupExport(refreshGraph, logConsole);
@@ -121,6 +136,8 @@ async function refreshGraph() {
 
         renderGraph();
 
+        state.variables = await getVariables();
+        renderVariables(state.variables);
         state.events = await getEvents();
         renderEvents(state.events);
         renderAssets(await getAssets());

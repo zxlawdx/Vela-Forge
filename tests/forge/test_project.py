@@ -63,3 +63,21 @@ def test_malformed_properties_do_not_replace_project(properties):
 
     assert service.get_project() == before
     assert service.graph.get_node(node.id) is node
+
+
+def test_non_finite_metadata_and_oversized_coordinates_are_atomic():
+    service = ForgeService()
+    service.create_node("dialogue")
+    before = service.get_project()
+
+    for field in ("metadata", "coordinate"):
+        data = deepcopy(before)
+        if field == "metadata":
+            data["metadata"]["bad"] = float("nan")
+        else:
+            data["graph"]["nodes"][0]["position"]["x"] = 10 ** 400
+
+        with pytest.raises(ValueError):
+            service.open_project(data)
+
+        assert service.get_project() == before

@@ -172,3 +172,40 @@ def test_asset_http_round_trip(client):
     client("POST", "/project/new")
     assert client("PUT", "/project", project)[0] == 200
     assert client("GET", "/assets")[1] == [asset]
+
+
+def test_reconnection_http_preserves_id(client):
+    nodes = [client("POST", "/nodes", {"type": "dialogue"})[1] for _ in range(3)]
+    _, connection = client("POST", "/connections", {
+        "source_node_id": nodes[0]["id"], "source_port": "out",
+        "target_node_id": nodes[1]["id"], "target_port": "in",
+    })
+    path = "/connections/" + connection["id"]
+    status, updated = client("PATCH", path, {"target_node_id": nodes[2]["id"]})
+    assert status == 200
+    assert updated["id"] == connection["id"]
+    assert client("GET", "/graph")[1]["connections"] == [updated]
+    assert client("PATCH", path, {"target_port": "out"})[0] == 400
+    assert client("GET", "/graph")[1]["connections"] == [updated]
+
+
+def test_variable_http_history_and_validation(client):
+    status, variable = client("POST", "/variables", {"name": "score", "type": "number", "default": 0})
+    assert status == 200
+    assert client("GET", "/variables")[1] == [variable]
+    _, node = client("POST", "/nodes", {"type": "branch", "properties": {"condition": {
+        "variable": "score", "operator": "greater_than", "value": 10,
+    }}})
+    assert not any(p["code"] == "missing_variable" for p in client("GET", "/problems")[1])
+    assert client("DELETE", "/variables/score")[0] == 200
+    assert any(p["code"] == "missing_variable" for p in client("GET", "/problems")[1])
+    assert client("POST", "/history/undo")[0] == 200
+    assert client("GET", "/variables")[1] == [variable]
+
+
+def test_event_rename_http(client):
+    _, event = client("POST", "/events", {"name": "before"})
+    status, renamed = client("PATCH", "/events/" + event["id"], {"name": "after"})
+    assert status == 200
+    assert renamed == {"id": event["id"], "name": "after"}
+    assert client("PATCH", "/events/" + event["id"], {"name": ""})[0] == 400
