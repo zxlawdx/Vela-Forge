@@ -300,3 +300,14 @@ export async function deleteVariable(name) {
 
     return parseResponse(response);
 }
+
+
+export async function renameEvent(eventId, name) {
+    const response = await fetch(`${API_BASE}/events/${encodeURIComponent(eventId)}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name}),
+    });
+
+    return parseResponse(response);
+}

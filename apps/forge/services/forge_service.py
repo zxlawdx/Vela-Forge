@@ -156,6 +156,25 @@ class ForgeService:
 
         return event
 
+    def rename_event(self, event_id: str, name: str) -> Event:
+        if event_id not in self.events:
+            raise ValueError("Evento não existe")
+
+        if not isinstance(name, str) or not name.strip() or len(name) > 128:
+            raise ValueError("Nome de evento deve ter entre 1 e 128 caracteres")
+
+        name = name.strip()
+
+        if any(event.name == name and event.id != event_id for event in self.events.values()):
+            raise ValueError("Já existe um evento com esse nome")
+
+        before = self.get_project()
+        event = self.events[event_id]
+        event.name = name
+        self.history.record("Rename event", before, self.get_project())
+
+        return event
+
     def list_events(self) -> list[dict]:
         events = []
 

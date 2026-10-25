@@ -100,3 +100,10 @@ Declarations survive .vforge round trips; legacy files without declarations infe
 them from Set Variable first, then Branch, and save the explicit model thereafter.
 Both runners initialize declared defaults. Browser create/select/delete/undo and
 HTTP/domain/history/malformed-file checks passed, as did real Godot comparisons.
+
+## Event Manager follow-up
+
+Events can be renamed without changing IDs or node references. Duplicate/invalid
+names are rejected; cancellation leaves state untouched. Rename uses the existing
+history and is reversible. Existing usage navigation and delete-reference warnings
+were retained; no runtime event bus was added.

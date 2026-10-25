@@ -32,3 +32,22 @@ def test_duplicate_event_name_does_not_replace_event():
         service.create_event("test")
 
     assert list(service.events) == [event.id]
+
+
+def test_event_rename_preserves_references_and_undo():
+    service = ForgeService()
+    event = service.create_event("before")
+    node = service.create_node("event", {"event": event.id})
+    service.create_event("existing")
+    service.rename_event(event.id, "after")
+    assert service.list_events()[0]["usages"] == [node.id]
+    assert service.graph.get_node(node.id).properties["event"] == event.id
+    service.undo()
+    assert service.events[event.id].name == "before"
+    service.redo()
+    assert service.events[event.id].name == "after"
+
+    with pytest.raises(ValueError):
+        service.rename_event(event.id, "existing")
+
+    assert service.events[event.id].name == "after"

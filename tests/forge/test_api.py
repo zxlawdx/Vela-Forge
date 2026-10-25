@@ -201,3 +201,11 @@ def test_variable_http_history_and_validation(client):
     assert any(p["code"] == "missing_variable" for p in client("GET", "/problems")[1])
     assert client("POST", "/history/undo")[0] == 200
     assert client("GET", "/variables")[1] == [variable]
+
+
+def test_event_rename_http(client):
+    _, event = client("POST", "/events", {"name": "before"})
+    status, renamed = client("PATCH", "/events/" + event["id"], {"name": "after"})
+    assert status == 200
+    assert renamed == {"id": event["id"], "name": "after"}
+    assert client("PATCH", "/events/" + event["id"], {"name": ""})[0] == 400
