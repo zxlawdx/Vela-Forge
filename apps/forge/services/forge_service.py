@@ -7,7 +7,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from uuid import uuid4
 
-from apps.forge.exporters import godot
+from apps.forge.exporters import godot, unity
 from apps.forge.domain.assets import Asset, validate_asset
 from apps.forge.domain.connections import Connection
 from apps.forge.domain.events import Event
@@ -33,10 +33,12 @@ class ForgeService:
         if any(problem["severity"] == "error" for problem in problems):
             raise ValueError("Export bloqueado: corrija os erros no painel Problems")
 
-        if engine != "godot":
+        if engine == "godot":
+            files = godot.export_project(self.get_project())
+        elif engine == "unity":
+            files = unity.export_project(self.get_project())
+        else:
             raise ValueError("Exporter não disponível")
-
-        files = godot.export_project(self.get_project())
         buffer = BytesIO()
 
         with ZipFile(buffer, "w", compression=ZIP_DEFLATED) as archive:

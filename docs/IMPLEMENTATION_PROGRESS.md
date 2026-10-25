@@ -166,3 +166,13 @@ validator-gated and leaves .vforge/history untouched. Generated Code shows all
 files; native export writes a chosen directory, browser fallback downloads a ZIP.
 Godot execution still needs a smoke test in an installed Godot 4 editor. Assets
 are included as project data but automatic placement in scenes is future scope.
+
+## Issue #10 — Unity exporter
+
+The same validated project can target Unity. Output includes an isolated C#
+MonoBehaviour runner, deterministic generated data, the original serialized IR
+and setup instructions. Import Assets/Forge into Unity and attach ForgeRunner to
+an empty GameObject. Dialogue/Choice use IMGUI; flow events expose C# events.
+Properties are escaped C# literals, never executable user code. Native Unity
+compilation/Play Mode verification remains pending because no Unity editor is
+installed. Domain entities contain no engine-specific fields or imports.

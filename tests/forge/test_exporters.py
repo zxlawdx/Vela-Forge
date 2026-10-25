@@ -54,3 +54,25 @@ def test_fatal_validation_blocks_export():
 
     with pytest.raises(ValueError, match="Problems"):
         service.generate_export("godot")
+
+
+def test_same_ir_exports_to_unity_without_domain_changes(tmp_path):
+    service = complete_flow()
+    before = service.get_project()
+    godot = service.generate_export("godot")
+    unity = service.generate_export("unity")
+
+    assert unity == service.generate_export("unity")
+    assert service.get_project() == before
+    assert godot["files"] != unity["files"]
+    assert json.loads(unity["files"]["Assets/Forge/forge_project.json"]) == before
+    service.export_directory("unity", str(tmp_path))
+    assert (tmp_path / "Assets/Forge/ForgeRunner.cs").is_file()
+
+
+def test_unity_literals_escape_user_content():
+    from apps.forge.exporters.unity import csharp_value
+
+    assert csharp_value('a"\\b\n') == '"a\\"\\\\b\\n"'
+    assert csharp_value([True, None, 3]) == "new object[] {true, null, 3.0d}"
+    assert "new Dictionary" in csharp_value({"flag": False})
