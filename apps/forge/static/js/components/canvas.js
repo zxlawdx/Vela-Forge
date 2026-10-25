@@ -549,6 +549,7 @@ function beginNodeDrag(
             nodeElement,
 
         nodeId,
+        initialPosition: {...getNodePosition(nodeId)},
     };
 
 
@@ -661,8 +662,26 @@ function endNodeDrag(
 
     const nodeId = draggingNode.nodeId;
     const position = getNodePosition(nodeId);
+    const initialPosition = draggingNode.initialPosition;
+
+    if (event?.type === "pointercancel") {
+        setNodePosition(nodeId, initialPosition.x, initialPosition.y);
+        draggingNode.element.style.left = `${initialPosition.x}px`;
+        draggingNode.element.style.top = `${initialPosition.y}px`;
+        draggingNode = null;
+        drawConnections();
+
+        return;
+    }
 
     draggingNode = null;
+
+    if (
+        position.x === initialPosition.x &&
+        position.y === initialPosition.y
+    ) {
+        return;
+    }
 
     document.dispatchEvent(
         new CustomEvent("forge:node-moved", {
