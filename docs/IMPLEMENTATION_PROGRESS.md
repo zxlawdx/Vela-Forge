@@ -97,3 +97,10 @@ ports for the canvas. Start has no input, End has no output, Branch exposes
 true/false, and Choice derives one choice_N output per option. Removing an option
 with an attached connection is rejected until that connection is removed.
 The frontend no longer declares default properties or hardcodes in/out sockets.
+
+## Issue #11 — connection selection and deletion
+
+Wires can be selected and removed with Delete/Backspace. Text editing does not
+trigger graph deletion. Selection retains the stable connection ID as the basis
+for future source/target reconnection; endpoint dragging is intentionally future
+scope in Issue #11. DELETE passes through the shared service to Graph.disconnect.

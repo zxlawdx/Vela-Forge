@@ -94,6 +94,9 @@ class ForgeService:
     def get_graph(self) -> dict:
         return self.graph.to_dict()
 
+    def delete_connection(self, connection_id: str) -> None:
+        self.graph.disconnect(connection_id)
+
     def create_connection(
         self,
         source_node_id: str,

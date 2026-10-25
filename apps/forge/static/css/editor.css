@@ -2215,3 +2215,21 @@
 
     pointer-events: none;
 }
+
+#vf-node-layer {
+    pointer-events: none;
+}
+
+.vf-node {
+    pointer-events: auto;
+}
+
+.vf-wire:not(.vf-wire--preview) {
+    pointer-events: stroke;
+    cursor: pointer;
+}
+
+.vf-wire--selected {
+    stroke: var(--vf-yellow);
+    stroke-width: 4;
+}

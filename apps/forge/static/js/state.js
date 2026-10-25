@@ -5,6 +5,7 @@ export const state = {
     },
 
     selectedNodeId: null,
+    selectedConnectionId: null,
 
     positions: new Map(),
 
@@ -17,6 +18,14 @@ export const state = {
 
 export function setGraph(graph) {
     state.graph = graph;
+
+    if (!graph.connections.some(item => item.id === state.selectedConnectionId)) {
+        state.selectedConnectionId = null;
+    }
+
+    if (!graph.nodes.some(item => item.id === state.selectedNodeId)) {
+        state.selectedNodeId = null;
+    }
 
     state.positions.clear();
 
@@ -33,6 +42,7 @@ export function getNode(nodeId) {
 
 export function selectNode(nodeId) {
     state.selectedNodeId = nodeId;
+    state.selectedConnectionId = null;
 }
 
 export function getSelectedNode() {

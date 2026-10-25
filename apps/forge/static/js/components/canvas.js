@@ -517,6 +517,7 @@ function setSelectedNode(
 
 
     renderInspector();
+    drawConnections();
 }
 
 
@@ -1689,6 +1690,25 @@ function drawWire(
     ) {
         path.dataset.connectionId =
             connection.id;
+
+        path.classList.toggle(
+            "vf-wire--selected",
+            state.selectedConnectionId === connection.id
+        );
+
+        path.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            state.selectedNodeId = null;
+            state.selectedConnectionId = connection.id;
+
+            for (const node of nodeLayer.querySelectorAll(".selected")) {
+                node.classList.remove("selected");
+            }
+
+            renderInspector();
+            drawConnections();
+        });
     }
 
 

@@ -95,3 +95,16 @@ def test_registry_drives_serialized_ports(client):
     assert status == 200
     assert [port["name"] for port in node["ports"]["outputs"]] == ["true", "false"]
     assert client("GET", "/graph")[1]["nodes"][0]["ports"] == node["ports"]
+
+
+def test_delete_connection_endpoint(client):
+    _, source = client("POST", "/nodes", {"type": "start"})
+    _, target = client("POST", "/nodes", {"type": "end"})
+    _, connection = client("POST", "/connections", {
+        "source_node_id": source["id"], "source_port": "out",
+        "target_node_id": target["id"], "target_port": "in",
+    })
+
+    assert client("DELETE", "/connections/" + connection["id"])[0] == 200
+    assert client("GET", "/graph")[1]["connections"] == []
+    assert client("DELETE", "/connections/" + connection["id"])[0] == 400

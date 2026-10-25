@@ -2,6 +2,7 @@ import {
     getGraph,
     createNode,
     deleteNode,
+    deleteConnection,
     createConnection,
     updateNode,
 } from "./api.js";
@@ -50,6 +51,7 @@ async function bootstrap() {
     setupRefresh();
 
     setupConnectionCreation();
+    setupConnectionDeletion();
     setupNodeMovement();
     setupPropertyEditing();
 
@@ -534,4 +536,27 @@ function setupPropertyEditing() {
             }
         }
     );
+}
+
+
+function setupConnectionDeletion() {
+    document.addEventListener("keydown", async (event) => {
+        if (
+            !["Delete", "Backspace"].includes(event.key) ||
+            event.target.closest("input, textarea, select, [contenteditable]") ||
+            !state.selectedConnectionId
+        ) {
+            return;
+        }
+
+        event.preventDefault();
+
+        try {
+            await deleteConnection(state.selectedConnectionId);
+            state.selectedConnectionId = null;
+            await refreshGraph();
+        } catch (error) {
+            logConsole(`Erro ao remover connection: ${error.message}`);
+        }
+    });
 }

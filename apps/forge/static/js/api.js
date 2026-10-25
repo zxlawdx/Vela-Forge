@@ -101,3 +101,13 @@ export async function updateNode(nodeId, changes) {
 
     return parseResponse(response);
 }
+
+
+export async function deleteConnection(connectionId) {
+    const response = await fetch(
+        `${API_BASE}/connections/${encodeURIComponent(connectionId)}`,
+        {method: "DELETE"}
+    );
+
+    return parseResponse(response);
+}

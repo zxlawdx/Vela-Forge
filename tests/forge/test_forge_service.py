@@ -112,3 +112,18 @@ def test_invalid_property_patch_is_atomic():
 
     assert node.position == position
     assert node.properties == {"actor": "", "text": "Novo diálogo"}
+
+
+def test_disconnect_and_missing_id():
+    service = ForgeService()
+    start = service.create_node("start")
+    end = service.create_node("end")
+    connection = service.create_connection(start.id, "out", end.id, "in")
+
+    service.delete_connection(connection.id)
+
+    assert service.get_graph()["connections"] == []
+    assert len(service.graph.nodes) == 2
+
+    with pytest.raises(ValueError):
+        service.delete_connection(connection.id)
