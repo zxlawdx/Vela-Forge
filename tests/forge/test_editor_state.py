@@ -56,3 +56,13 @@ def test_recents_are_bounded_and_preferences_are_validated(tmp_path):
         state.update_preferences({"target": "unknown"})
 
     assert state.preferences()["target"] == "godot"
+
+
+@pytest.mark.parametrize("target", [None, [], {}, 1])
+def test_invalid_target_type_preserves_preferences(tmp_path, target):
+    state = EditorState(tmp_path / "state.sqlite3")
+
+    with pytest.raises(ValueError):
+        state.update_preferences({"target": target})
+
+    assert state.preferences()["target"] == "godot"

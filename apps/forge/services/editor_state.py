@@ -41,7 +41,10 @@ class EditorState:
         if not isinstance(changes, dict) or set(changes) - set(DEFAULT_PREFERENCES):
             raise ValueError("Preferência não suportada")
 
-        if "target" in changes and changes["target"] not in {"godot", "unity"}:
+        if "target" in changes and (
+            not isinstance(changes["target"], str)
+            or changes["target"] not in {"godot", "unity"}
+        ):
             raise ValueError("Target deve ser godot ou unity")
 
         if "show_grid" in changes and type(changes["show_grid"]) is not bool:
