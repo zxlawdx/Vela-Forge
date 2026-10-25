@@ -94,3 +94,20 @@ class StarterBridge(BaseBridge):
             return {"ok": True}
         except (OSError, ValueError) as error:
             return {"error": str(error)}
+
+
+    def export_forge_project(self, engine: str) -> dict:
+        import webview
+        from apps.forge.services.forge_service import forge_service
+
+        try:
+            selected = webview.windows[0].create_file_dialog(webview.FileDialog.FOLDER)
+
+            if not selected:
+                return {"cancelled": True}
+
+            forge_service.export_directory(engine, selected[0])
+
+            return {"ok": True}
+        except (OSError, ValueError) as error:
+            return {"error": str(error)}

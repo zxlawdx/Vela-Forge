@@ -154,3 +154,15 @@ no-ops do not. Create/delete/move/property/connection operations, events and ass
 imports are reversible, including attached connections. New/Open clears history
 only after a valid load. Undo/Redo buttons and Ctrl/Cmd+Z, Ctrl+Y, Ctrl+Shift+Z call
 the same API; focused text fields retain native text undo. No DOM reversal logic.
+
+## Issue #9 — Godot exporter
+
+The exporter contract is a plain export_project(project) -> {relative path: text}
+function. Godot output includes project.godot, main.tscn, a GDScript runner, the
+serialized project and instructions. Start/Dialogue/Choice/Branch/Set Variable/
+Emit Event/End are interpreted by the generated runner, with buttons and signals.
+Branch.condition means a variable key, not arbitrary code. Export is deterministic,
+validator-gated and leaves .vforge/history untouched. Generated Code shows all
+files; native export writes a chosen directory, browser fallback downloads a ZIP.
+Godot execution still needs a smoke test in an installed Godot 4 editor. Assets
+are included as project data but automatic placement in scenes is future scope.

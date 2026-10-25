@@ -208,3 +208,12 @@ export async function changeHistory(action) {
 
     return parseResponse(response);
 }
+
+
+export async function exportProject(engine) {
+    const response = await fetch(`${API_BASE}/export/${encodeURIComponent(engine)}`, {
+        method: "POST",
+    });
+
+    return parseResponse(response);
+}

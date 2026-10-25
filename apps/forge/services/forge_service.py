@@ -1,9 +1,13 @@
+import base64
+from io import BytesIO
 import json
+from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from uuid import uuid4
 
+from apps.forge.exporters import godot
 from apps.forge.domain.assets import Asset, validate_asset
 from apps.forge.domain.connections import Connection
 from apps.forge.domain.events import Event
@@ -22,6 +26,40 @@ class ForgeService:
         self.metadata = {"name": "untitled"}
         self.events = {}
         self.assets = {}
+
+    def generate_export(self, engine: str) -> dict:
+        problems = self.validate()
+
+        if any(problem["severity"] == "error" for problem in problems):
+            raise ValueError("Export bloqueado: corrija os erros no painel Problems")
+
+        if engine != "godot":
+            raise ValueError("Exporter não disponível")
+
+        files = godot.export_project(self.get_project())
+        buffer = BytesIO()
+
+        with ZipFile(buffer, "w", compression=ZIP_DEFLATED) as archive:
+            for name, content in sorted(files.items()):
+                info = ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+                info.compress_type = ZIP_DEFLATED
+                archive.writestr(info, content.encode("utf-8"))
+
+        return {
+            "engine": engine,
+            "files": files,
+            "archive": base64.b64encode(buffer.getvalue()).decode("ascii"),
+        }
+
+    def export_directory(self, engine: str, directory: str) -> None:
+        result = self.generate_export(engine)
+        target = Path(directory)
+        target.mkdir(parents=True, exist_ok=True)
+
+        for name, content in result["files"].items():
+            path = target / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding="utf-8")
 
     def validate(self) -> list[dict]:
         problems = validate_graph(self.graph.to_dict(), self.events)
