@@ -24,6 +24,7 @@ class ForgeService:
     def __init__(self, editor_state: EditorState | None = None):
         self.editor_state = editor_state or EditorState()
         self.history = CommandHistory()
+        self.project_path = None
         self.graph = Graph()
         self.metadata = {"name": "untitled"}
         self.events = {}
@@ -154,6 +155,7 @@ class ForgeService:
 
     def open_project(self, data: dict) -> dict:
         self._restore_project(data)
+        self.project_path = None
         self.history.clear()
 
         return self.get_project()
@@ -169,6 +171,7 @@ class ForgeService:
         return self.get_project()
 
     def new_project(self) -> dict:
+        self.project_path = None
         self.history.clear()
         self.graph = Graph()
         self.metadata = {"name": "untitled"}
@@ -208,6 +211,7 @@ class ForgeService:
                 temporary.write(content)
 
             os.replace(temporary_path, target)
+            self.project_path = str(target.resolve())
             self.editor_state.remember(str(target), self.metadata["name"])
         finally:
             if temporary_path is not None:
@@ -228,6 +232,7 @@ class ForgeService:
             raise ValueError("Arquivo .vforge não contém JSON UTF-8 válido") from error
 
         project = self.open_project(data)
+        self.project_path = str(target.resolve())
         self.editor_state.remember(str(target), self.metadata["name"])
 
         return project

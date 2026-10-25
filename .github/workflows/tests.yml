@@ -1,0 +1,22 @@
+name: Forge tests
+on: [push, pull_request]
+jobs:
+  unit-and-http:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r requirements.txt -r requirements-dev.txt
+      - run: python -m pytest -v
+      - name: JavaScript syntax
+        run: python -c "import pathlib,subprocess; [subprocess.run(['node','--check',str(p)],check=True) for p in pathlib.Path('apps/forge/static/js').rglob('*.js')]"
+      - run: git diff --check

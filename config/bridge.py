@@ -50,24 +50,30 @@ class StarterBridge(BaseBridge):
             return {"ok": False, "error": "Não foi possível abrir o recurso neste ambiente."}
 
 
-    def save_forge_project(self) -> dict:
+    def save_forge_project(self, save_as: bool = False) -> dict:
         import webview
         from apps.forge.services.forge_service import forge_service
 
+        if type(save_as) is not bool:
+            return {"error": "save_as deve ser booleano"}
+
         try:
-            selected = webview.windows[0].create_file_dialog(
-                webview.FileDialog.SAVE,
-                save_filename="project.vforge",
-                file_types=("Vela Forge (*.vforge)",),
-            )
+            path = forge_service.project_path
 
-            if not selected:
-                return {"cancelled": True}
+            if save_as or path is None:
+                selected = webview.windows[0].create_file_dialog(
+                    webview.FileDialog.SAVE,
+                    save_filename=Path(path).name if path else "project.vforge",
+                    file_types=("Vela Forge (*.vforge)",),
+                )
 
-            path = selected if isinstance(selected, str) else selected[0]
+                if not selected:
+                    return {"cancelled": True}
 
-            if not path.lower().endswith(".vforge"):
-                path += ".vforge"
+                path = selected if isinstance(selected, str) else selected[0]
+
+                if not path.lower().endswith(".vforge"):
+                    path += ".vforge"
 
             forge_service.save_project_file(path)
 
@@ -89,7 +95,8 @@ class StarterBridge(BaseBridge):
             if not selected:
                 return {"cancelled": True}
 
-            forge_service.open_project_file(selected[0])
+            path = selected if isinstance(selected, str) else selected[0]
+            forge_service.open_project_file(path)
 
             return {"ok": True}
         except (OSError, ValueError) as error:
@@ -106,7 +113,8 @@ class StarterBridge(BaseBridge):
             if not selected:
                 return {"cancelled": True}
 
-            forge_service.export_directory(engine, selected[0])
+            path = selected if isinstance(selected, str) else selected[0]
+            forge_service.export_directory(engine, path)
 
             return {"ok": True}
         except (OSError, ValueError) as error:
