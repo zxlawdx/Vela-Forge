@@ -25,7 +25,8 @@ export async function getGraph() {
 
 export async function createNode(
     type,
-    properties = {}
+    properties = {},
+    position = null
 ) {
     const response = await fetch(
         `${API_BASE}/nodes`,
@@ -40,6 +41,7 @@ export async function createNode(
             body: JSON.stringify({
                 type,
                 properties,
+                position,
             }),
         }
     );
@@ -98,6 +100,159 @@ export async function updateNode(nodeId, changes) {
             body: JSON.stringify(changes),
         }
     );
+
+    return parseResponse(response);
+}
+
+
+export async function deleteConnection(connectionId) {
+    const response = await fetch(
+        `${API_BASE}/connections/${encodeURIComponent(connectionId)}`,
+        {method: "DELETE"}
+    );
+
+    return parseResponse(response);
+}
+
+
+export async function getProject() {
+    const response = await fetch(`${API_BASE}/project`);
+
+    return parseResponse(response);
+}
+
+export async function openProject(project) {
+    const response = await fetch(`${API_BASE}/project`, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(project),
+    });
+
+    return parseResponse(response);
+}
+
+export async function newProject() {
+    const response = await fetch(`${API_BASE}/project/new`, {method: "POST"});
+
+    return parseResponse(response);
+}
+
+export async function renameProject(name) {
+    const response = await fetch(`${API_BASE}/project`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name}),
+    });
+
+    return parseResponse(response);
+}
+
+
+export async function getProblems() {
+    const response = await fetch(`${API_BASE}/problems`);
+
+    return parseResponse(response);
+}
+
+
+export async function getEvents() {
+    const response = await fetch(`${API_BASE}/events`);
+
+    return parseResponse(response);
+}
+
+export async function createEvent(name) {
+    const response = await fetch(`${API_BASE}/events`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name}),
+    });
+
+    return parseResponse(response);
+}
+
+export async function deleteEvent(eventId) {
+    const response = await fetch(`${API_BASE}/events/${encodeURIComponent(eventId)}`, {
+        method: "DELETE",
+    });
+
+    return parseResponse(response);
+}
+
+
+export async function getAssets() {
+    const response = await fetch(`${API_BASE}/assets`);
+
+    return parseResponse(response);
+}
+
+export async function importAsset(asset) {
+    const response = await fetch(`${API_BASE}/assets`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(asset),
+    });
+
+    return parseResponse(response);
+}
+
+
+export async function getHistory() {
+    const response = await fetch(`${API_BASE}/history`);
+
+    return parseResponse(response);
+}
+
+export async function changeHistory(action) {
+    const response = await fetch(`${API_BASE}/history/${action}`, {method: "POST"});
+
+    return parseResponse(response);
+}
+
+
+export async function exportProject(engine) {
+    const response = await fetch(`${API_BASE}/export/${encodeURIComponent(engine)}`, {
+        method: "POST",
+    });
+
+    return parseResponse(response);
+}
+
+
+export async function getPreferences() {
+    const response = await fetch(`${API_BASE}/preferences`);
+
+    return parseResponse(response);
+}
+
+export async function updatePreferences(changes) {
+    const response = await fetch(`${API_BASE}/preferences`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(changes),
+    });
+
+    return parseResponse(response);
+}
+
+export async function getRecents() {
+    const response = await fetch(`${API_BASE}/recents`);
+
+    return parseResponse(response);
+}
+
+export async function openRecent(path) {
+    const response = await fetch(`${API_BASE}/recents/open`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({path}),
+    });
+
+    return parseResponse(response);
+}
+
+export async function resetEditorState() {
+    const response = await fetch(`${API_BASE}/editor-state`, {method: "DELETE"});
 
     return parseResponse(response);
 }

@@ -1,9 +1,22 @@
+import {setupPreferences} from "./components/preferences.js";
+import {setupExport} from "./components/export.js";
+import {setupHistory, renderHistory} from "./components/history.js";
+import {setupAssets, renderAssets} from "./components/assets.js";
+import {setupEvents, renderEvents} from "./components/events.js";
+import {renderProblems} from "./components/problems.js";
+import {setupProjectActions} from "./components/project.js";
 import {
     getGraph,
     createNode,
     deleteNode,
+    deleteConnection,
     createConnection,
     updateNode,
+    getProject,
+    getProblems,
+    getEvents,
+    getAssets,
+    getHistory,
 } from "./api.js";
 
 
@@ -46,12 +59,39 @@ async function bootstrap() {
 
     setupCreateNode();
     setupNodeLibrary();
+
+    document.addEventListener("forge:node-drop", async (event) => {
+        await createNodeByType(event.detail.type, event.detail.position);
+    });
     setupDeleteNode();
     setupRefresh();
 
     setupConnectionCreation();
+    setupConnectionDeletion();
     setupNodeMovement();
     setupPropertyEditing();
+    setupProjectActions(refreshGraph, logConsole);
+    setupEvents(refreshGraph, logConsole);
+    setupAssets(refreshGraph, logConsole);
+    setupHistory(refreshGraph, logConsole);
+    setupExport(refreshGraph, logConsole);
+    await setupPreferences(refreshGraph, logConsole);
+
+    document.querySelector("#vf-preview-project").addEventListener("click", async () => {
+        try {
+            const problems = await getProblems();
+            renderProblems(problems);
+
+            if (problems.some(problem => problem.severity === "error")) {
+                document.querySelector('[data-tab="problems"]').click();
+                logConsole("Corrija os erros em Problems antes do preview/export.");
+            } else {
+                logConsole("Graph válido. Selecione um asset para visualizar no Scene Preview.");
+            }
+        } catch (error) {
+            logConsole(`Erro na validação: ${error.message}`);
+        }
+    });
 
     await refreshGraph();
 
@@ -81,11 +121,21 @@ async function refreshGraph() {
 
         renderGraph();
 
+        state.events = await getEvents();
+        renderEvents(state.events);
+        renderAssets(await getAssets());
+        renderHistory(await getHistory());
         renderInspector();
 
         renderForgeIR();
 
         updateStatusBar();
+
+        const problems = await getProblems();
+        renderProblems(problems);
+
+        const project = await getProject();
+        document.querySelector("#vf-project-name").textContent = project.metadata.name;
 
     } catch (error) {
         console.error(
@@ -132,6 +182,13 @@ function setupNodeLibrary() {
 
 
     nodes.forEach((item) => {
+        item.draggable = true;
+
+        item.addEventListener("dragstart", (event) => {
+            event.dataTransfer.setData("application/x-forge-node", item.dataset.type);
+            event.dataTransfer.effectAllowed = "copy";
+        });
+
         item.addEventListener(
             "dblclick",
             async () => {
@@ -186,13 +243,15 @@ function setupNodeLibrary() {
    ========================================================= */
 
 async function createNodeByType(
-    type
+    type,
+    position = null
 ) {
     try {
         const node =
             await createNode(
                 type,
-                defaultProperties(type)
+                {},
+                position
             );
 
 
@@ -228,58 +287,27 @@ async function createNodeByType(
    ========================================================= */
 
 function setupDeleteNode() {
-    document
-        .querySelector(
-            "#vf-delete-node"
-        )
-        ?.addEventListener(
-            "click",
-            async () => {
-                const nodeId =
-                    state.selectedNodeId;
+    document.querySelector("#vf-delete-node")?.addEventListener("click", deleteSelectedNode);
+    document.addEventListener("forge:node-delete-request", deleteSelectedNode);
+}
 
 
-                if (!nodeId) {
-                    logConsole(
-                        "Nenhum node selecionado."
-                    );
+async function deleteSelectedNode() {
+    const nodeId = state.selectedNodeId;
 
-                    return;
-                }
+    if (!nodeId) {
+        logConsole("Nenhum node selecionado.");
+        return;
+    }
 
-
-                try {
-                    await deleteNode(
-                        nodeId
-                    );
-
-
-                    state.selectedNodeId =
-                        null;
-
-
-                    logConsole(
-                        `Node removido: ${nodeId}`
-                    );
-
-
-                    await refreshGraph();
-
-                    renderInspector();
-
-                } catch (error) {
-                    console.error(
-                        "[Forge] Erro ao remover node:",
-                        error
-                    );
-
-
-                    logConsole(
-                        `Erro ao remover node: ${error.message}`
-                    );
-                }
-            }
-        );
+    try {
+        await deleteNode(nodeId);
+        state.selectedNodeId = null;
+        logConsole(`Node removido: ${nodeId}`);
+        await refreshGraph();
+    } catch (error) {
+        logConsole(`Erro ao remover node: ${error.message}`);
+    }
 }
 
 
@@ -492,67 +520,6 @@ function logConsole(
    DEFAULT NODE PROPERTIES
    ========================================================= */
 
-function defaultProperties(
-    type
-) {
-    switch (type) {
-
-        case "start":
-            return {
-                trigger:
-                    "scene_ready",
-            };
-
-
-        case "dialogue":
-            return {
-                actor:
-                    "Penguin",
-
-                text:
-                    "Novo diálogo",
-            };
-
-
-        case "choice":
-            return {
-                choices: [
-                    "Opção A",
-                    "Opção B",
-                ],
-            };
-
-
-        case "branch":
-            return {
-                condition: "",
-            };
-
-
-        case "set-variable":
-            return {
-                variable: "",
-                value: "",
-            };
-
-
-        case "event":
-            return {
-                event:
-                    "new_event",
-            };
-
-
-        case "end":
-            return {};
-
-
-        default:
-            return {};
-    }
-}
-
-
 /* =========================================================
    START
    ========================================================= */
@@ -595,4 +562,27 @@ function setupPropertyEditing() {
             }
         }
     );
+}
+
+
+function setupConnectionDeletion() {
+    document.addEventListener("keydown", async (event) => {
+        if (
+            !["Delete", "Backspace"].includes(event.key) ||
+            event.target.closest("input, textarea, select, [contenteditable]") ||
+            !state.selectedConnectionId
+        ) {
+            return;
+        }
+
+        event.preventDefault();
+
+        try {
+            await deleteConnection(state.selectedConnectionId);
+            state.selectedConnectionId = null;
+            await refreshGraph();
+        } catch (error) {
+            logConsole(`Erro ao remover connection: ${error.message}`);
+        }
+    });
 }

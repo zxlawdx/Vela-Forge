@@ -1,4 +1,5 @@
 from vela.api import api
+from vela.core.http import Request
 
 from apps.forge.services.forge_service import forge_service
 
@@ -19,3 +20,11 @@ def create_connection(data: dict):
         "target_node_id": connection.target_node_id,
         "target_port": connection.target_port,
     }
+
+@api.delete("/forge/connections/<connection_id>")
+def delete_connection(request: Request):
+    connection_id = request.path_params["connection_id"]
+
+    forge_service.delete_connection(connection_id)
+
+    return {"deleted": connection_id}

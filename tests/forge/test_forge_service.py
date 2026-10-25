@@ -111,4 +111,32 @@ def test_invalid_property_patch_is_atomic():
         })
 
     assert node.position == position
-    assert node.properties == {}
+    assert node.properties == {"actor": "", "text": "Novo diálogo"}
+
+
+def test_disconnect_and_missing_id():
+    service = ForgeService()
+    start = service.create_node("start")
+    end = service.create_node("end")
+    connection = service.create_connection(start.id, "out", end.id, "in")
+
+    service.delete_connection(connection.id)
+
+    assert service.get_graph()["connections"] == []
+    assert len(service.graph.nodes) == 2
+
+    with pytest.raises(ValueError):
+        service.delete_connection(connection.id)
+
+
+def test_create_node_at_drop_position():
+    service = ForgeService()
+    node = service.create_node("branch", position={"x": -27.5, "y": 480})
+
+    assert service.get_node(node.id)["position"] == {"x": -27.5, "y": 480.0}
+    assert node.type == "branch"
+
+    with pytest.raises(ValueError):
+        service.create_node("dialogue", position={"x": None, "y": 0})
+
+    assert list(service.graph.nodes) == [node.id]

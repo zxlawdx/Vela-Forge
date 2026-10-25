@@ -20,7 +20,7 @@ collect_static(
     allow_install=False,
     verbose=False,
 )
-server = ApiServer(api.new_router(), port=8765, docs_enabled=False)
+server = ApiServer(api.new_router(), port=8765, docs_enabled=False, max_body_size=16 * 1024 * 1024)
 router = Router()
 router.base_url = "http://127.0.0.1:8765"
 

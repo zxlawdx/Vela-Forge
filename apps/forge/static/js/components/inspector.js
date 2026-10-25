@@ -1,5 +1,6 @@
 import {
     getSelectedNode,
+    state,
 } from "../state.js";
 
 
@@ -43,7 +44,7 @@ export function renderInspector() {
         </div>
 
         <div id="vf-inspector-properties">
-            ${renderProperties(node.properties)}
+            ${renderProperties(node.properties, node.type)}
         </div>
 
         <button type="submit">Salvar propriedades</button>
@@ -86,11 +87,11 @@ export function renderInspector() {
                     const key = field.dataset.property;
                     const previous = node.properties[key];
 
-                    properties[key] = typeof previous === "string"
+                    properties[key] = typeof previous === "string" && !field.hasAttribute("data-json-value")
                         ? field.value
                         : JSON.parse(field.value);
 
-                    if (typeof properties[key] !== typeof previous) {
+                    if (!field.hasAttribute("data-json-value") && typeof properties[key] !== typeof previous) {
                         throw new Error(`Tipo inválido para ${key}`);
                     }
                 }
@@ -113,13 +114,13 @@ export function renderInspector() {
     inspector.querySelector("#vf-inspector-delete").addEventListener(
         "click",
         () => {
-            document.querySelector("#vf-delete-node")?.click();
+            document.dispatchEvent(new CustomEvent("forge:node-delete-request"));
         }
     );
 }
 
 
-function renderProperties(properties = {}) {
+function renderProperties(properties = {}, nodeType = "") {
     const entries = Object.entries(properties);
 
     if (entries.length === 0) {
@@ -132,6 +133,37 @@ function renderProperties(properties = {}) {
 
     return entries
         .map(([key, value]) => {
+            if (nodeType === "set-variable" && key === "value") {
+                return `
+                    <div class="vf-field">
+                        <label>Value (JSON: true, 123, "texto", null...)</label>
+                        <textarea data-property="value" data-json-value>${escapeHtml(JSON.stringify(value))}</textarea>
+                    </div>
+                `;
+            }
+
+            if (nodeType === "event" && key === "event") {
+                const events = [...state.events];
+
+                if (value && !events.some(event => event.id === value)) {
+                    events.push({id: value, name: "Evento ausente"});
+                }
+
+                return `
+                    <div class="vf-field">
+                        <label>Evento</label>
+                        <select data-property="event">
+                            <option value="">Selecione um evento</option>
+                            ${events.map(event => `
+                                <option value="${escapeHtml(event.id)}" ${event.id === value ? "selected" : ""}>
+                                    ${escapeHtml(event.name)}
+                                </option>
+                            `).join("")}
+                        </select>
+                    </div>
+                `;
+            }
+
             if (
                 typeof value === "string" &&
                 value.length > 60
@@ -165,6 +197,10 @@ function renderProperties(properties = {}) {
 
 
 function stringifyValue(value) {
+    if (value === null) {
+        return "null";
+    }
+
     if (
         typeof value === "object" &&
         value !== null

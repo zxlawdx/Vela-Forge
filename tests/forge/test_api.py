@@ -9,12 +9,14 @@ from vela.core.api_server import ApiServer
 
 import apps.forge.api
 from apps.forge.domain.graph import Graph
+from apps.forge.services.editor_state import EditorState
 from apps.forge.services.forge_service import forge_service
 
 
 @pytest.fixture
-def client():
-    forge_service.graph = Graph()
+def client(tmp_path):
+    forge_service.editor_state = EditorState(tmp_path / "editor.sqlite3")
+    forge_service.new_project()
     server = ApiServer(api.new_router(), docs_enabled=False)
     server.register_routes()
 
@@ -36,7 +38,7 @@ def client():
         return int(status[0].split()[0]), json.loads(payload)
 
     yield request
-    forge_service.graph = Graph()
+    forge_service.new_project()
 
 
 def test_connection_position_and_property_lifecycle(client):
@@ -84,3 +86,89 @@ def test_api_rejects_self_connection(client):
 
     assert status == 400
     assert client("GET", "/graph")[1]["connections"] == []
+
+
+def test_registry_drives_serialized_ports(client):
+    status, types = client("GET", "/node-types")
+    assert status == 200
+    assert types["start"]["inputs"] == []
+
+    status, node = client("POST", "/nodes", {"type": "branch"})
+    assert status == 200
+    assert [port["name"] for port in node["ports"]["outputs"]] == ["true", "false"]
+    assert client("GET", "/graph")[1]["nodes"][0]["ports"] == node["ports"]
+
+
+def test_delete_connection_endpoint(client):
+    _, source = client("POST", "/nodes", {"type": "start"})
+    _, target = client("POST", "/nodes", {"type": "end"})
+    _, connection = client("POST", "/connections", {
+        "source_node_id": source["id"], "source_port": "out",
+        "target_node_id": target["id"], "target_port": "in",
+    })
+
+    assert client("DELETE", "/connections/" + connection["id"])[0] == 200
+    assert client("GET", "/graph")[1]["connections"] == []
+    assert client("DELETE", "/connections/" + connection["id"])[0] == 400
+
+
+def test_project_http_round_trip(client):
+    client("POST", "/nodes", {"type": "start"})
+    status, project = client("GET", "/project")
+    assert status == 200
+
+    assert client("POST", "/project/new")[0] == 200
+    assert client("GET", "/graph")[1]["nodes"] == []
+    assert client("PUT", "/project", project)[0] == 200
+    assert client("GET", "/project")[1] == project
+    assert client("PUT", "/project", {"format_version": 99})[0] == 400
+    assert client("GET", "/project")[1] == project
+
+
+def test_events_history_export_and_preferences_over_http(client):
+    status, event = client("POST", "/events", {"name": "ready"})
+    assert status == 200
+    _, start = client("POST", "/nodes", {"type": "start"})
+    _, emit = client("POST", "/nodes", {"type": "event", "properties": {"event": event["id"]}})
+    _, end = client("POST", "/nodes", {"type": "end"})
+
+    for source, target in [(start, emit), (emit, end)]:
+        assert client("POST", "/connections", {
+            "source_node_id": source["id"], "source_port": "out",
+            "target_node_id": target["id"], "target_port": "in",
+        })[0] == 200
+
+    assert client("GET", "/problems")[1] == []
+    assert client("GET", "/events")[1][0]["usages"] == [emit["id"]]
+    assert client("GET", "/history")[1]["can_undo"] is True
+    assert client("POST", "/history/undo")[0] == 200
+    assert len(client("GET", "/graph")[1]["connections"]) == 1
+    assert client("POST", "/history/redo")[0] == 200
+
+    before = client("GET", "/project")[1]
+
+    for engine in ["godot", "unity"]:
+        status, result = client("POST", "/export/" + engine)
+        assert status == 200
+        assert result["engine"] == engine
+        assert result["files"]
+
+    assert client("GET", "/project")[1] == before
+    assert client("PATCH", "/preferences", {"target": "unity"})[0] == 200
+    assert client("GET", "/preferences")[1]["target"] == "unity"
+    assert client("DELETE", "/editor-state")[0] == 200
+    assert client("GET", "/preferences")[1]["target"] == "godot"
+    assert client("GET", "/project")[1] == before
+
+
+def test_asset_http_round_trip(client):
+    image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aNu0AAAAASUVORK5CYII="
+    status, asset = client("POST", "/assets", {
+        "name": "pixel.png", "mime_type": "image/png", "data": image,
+    })
+    assert status == 200
+    assert client("GET", "/assets")[1] == [asset]
+    project = client("GET", "/project")[1]
+    client("POST", "/project/new")
+    assert client("PUT", "/project", project)[0] == 200
+    assert client("GET", "/assets")[1] == [asset]

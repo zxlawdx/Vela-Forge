@@ -88,6 +88,19 @@ export function setupCanvas() {
 
     setupConnectionEvents();
 
+    setupNodeDrop();
+
+    document.addEventListener("forge:select-node", (event) => {
+        const node = findNodeElement(event.detail);
+
+        if (node) {
+            setSelectedNode(node, event.detail);
+            state.viewport.x = workspace.clientWidth / 2 - node.offsetLeft * state.viewport.zoom;
+            state.viewport.y = workspace.clientHeight / 2 - node.offsetTop * state.viewport.zoom;
+            applyViewport();
+        }
+    });
+
     applyViewport();
 
 
@@ -235,6 +248,9 @@ function createNodeElement(
     article.dataset.type =
         node.type;
 
+    const portCount = Math.max(node.ports.inputs.length, node.ports.outputs.length);
+    article.style.minHeight = `${80 + portCount * 22}px`;
+
 
     article.style.left =
         `${position.x}px`;
@@ -298,20 +314,7 @@ function createNodeElement(
         </footer>
 
 
-        <span
-            class="vf-socket vf-socket--in"
-            data-port="in"
-            data-direction="in"
-            title="Input"
-        ></span>
-
-
-        <span
-            class="vf-socket vf-socket--out"
-            data-port="out"
-            data-direction="out"
-            title="Output"
-        ></span>
+        ${renderSockets(node)}
     `;
 
 
@@ -415,6 +418,32 @@ function createNodeElement(
    NODE CONTENT
    ========================================================= */
 
+function renderSockets(node) {
+    const sockets = [];
+
+    for (const direction of ["in", "out"]) {
+        const ports = direction === "in"
+            ? node.ports.inputs
+            : node.ports.outputs;
+
+        ports.forEach((port, index) => {
+            sockets.push(`
+                <span
+                    class="vf-socket vf-socket--${direction}"
+                    data-port="${escapeHtml(port.name)}"
+                    data-direction="${direction}"
+                    data-port-type="${escapeHtml(port.type)}"
+                    style="top: ${45 + index * 22}px"
+                    title="${escapeHtml(port.name)} (${escapeHtml(port.type)})"
+                ></span>
+            `);
+        });
+    }
+
+    return sockets.join("");
+}
+
+
 function renderNodeProperties(
     node
 ) {
@@ -501,6 +530,7 @@ function setSelectedNode(
 
 
     renderInspector();
+    drawConnections();
 }
 
 
@@ -1673,6 +1703,25 @@ function drawWire(
     ) {
         path.dataset.connectionId =
             connection.id;
+
+        path.classList.toggle(
+            "vf-wire--selected",
+            state.selectedConnectionId === connection.id
+        );
+
+        path.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            state.selectedNodeId = null;
+            state.selectedConnectionId = connection.id;
+
+            for (const node of nodeLayer.querySelectorAll(".selected")) {
+                node.classList.remove("selected");
+            }
+
+            renderInspector();
+            drawConnections();
+        });
     }
 
 
@@ -1939,4 +1988,31 @@ function escapeHtml(
             "'",
             "&#039;"
         );
+}
+
+function setupNodeDrop() {
+    workspace.addEventListener("dragover", (event) => {
+        if (event.dataTransfer.types.includes("application/x-forge-node")) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+        }
+    });
+
+    workspace.addEventListener("drop", (event) => {
+        const type = event.dataTransfer.getData("application/x-forge-node");
+
+        if (!type) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const position = pointerToWorld(event.clientX, event.clientY);
+
+        document.dispatchEvent(
+            new CustomEvent("forge:node-drop", {
+                detail: {type, position},
+            })
+        );
+    });
 }
