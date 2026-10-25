@@ -123,6 +123,8 @@ export function renderGraph() {
     /*
      * Limpa os nodes.
      */
+    cancelPendingConnection();
+
     nodeLayer.innerHTML = "";
 
 
@@ -1137,6 +1139,7 @@ function updateConnectionPreview(
 ) {
     if (
         !pendingConnection ||
+        event.pointerId !== pendingConnection.pointerId ||
         !previewWire
     ) {
         return;
@@ -1208,7 +1211,10 @@ function updateConnectionPreview(
 function finishConnection(
     event
 ) {
-    if (!pendingConnection) {
+    if (
+        !pendingConnection ||
+        event.pointerId !== pendingConnection.pointerId
+    ) {
         return;
     }
 
@@ -1338,6 +1344,8 @@ function releaseConnectionPointer() {
    ========================================================= */
 
 function cancelPendingConnection() {
+    releaseConnectionPointer();
+
     if (
         pendingConnection
             ?.sourceSocket

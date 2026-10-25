@@ -55,6 +55,15 @@ class Graph:
                 f"Node de destino '{connection.target_node_id}' não existe"
             )
 
+        if connection.source_node_id == connection.target_node_id:
+            raise ValueError("Self-connection não é permitida")
+
+        if connection.source_port != "out":
+            raise ValueError("Port de origem deve ser 'out'")
+
+        if connection.target_port != "in":
+            raise ValueError("Port de destino deve ser 'in'")
+
         self.connections[connection.id] = connection
 
     def disconnect(self, connection_id: str) -> None:
