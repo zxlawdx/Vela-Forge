@@ -76,3 +76,22 @@ def test_unity_literals_escape_user_content():
     assert csharp_value('a"\\b\n') == '"a\\"\\\\b\\n"'
     assert csharp_value([True, None, 3]) == "new object[] {true, null, 3.0d}"
     assert "new Dictionary" in csharp_value({"flag": False})
+
+
+def test_generated_gdscript_parses():
+    parser_module = pytest.importorskip("gdtoolkit.parser")
+    result = complete_flow().generate_export("godot")
+
+    parser_module.parser.parse(result["files"]["forge_runner.gd"])
+
+
+def test_generated_csharp_parses():
+    tree_sitter = pytest.importorskip("tree_sitter")
+    csharp = pytest.importorskip("tree_sitter_c_sharp")
+    parser = tree_sitter.Parser(tree_sitter.Language(csharp.language()))
+    result = complete_flow().generate_export("unity")
+
+    for name, content in result["files"].items():
+        if name.endswith(".cs"):
+            syntax = parser.parse(content.encode("utf-8"))
+            assert not syntax.root_node.has_error, name
