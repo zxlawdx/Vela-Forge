@@ -2252,3 +2252,12 @@
 .vf-problem--warning {
     color: var(--vf-yellow) !important;
 }
+
+
+.vf-event-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
+    border-bottom: 1px solid var(--vf-border);
+}

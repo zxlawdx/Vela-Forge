@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 from .connections import Connection
+from .events import Event
 from .graph import Graph
 from .nodes import Node
 from .registry import default_properties, validate_properties
@@ -9,7 +10,7 @@ from .registry import default_properties, validate_properties
 FORMAT_VERSION = 1
 
 
-def serialize_project(graph: Graph, metadata: dict) -> dict:
+def serialize_project(graph: Graph, metadata: dict, events: dict) -> dict:
     data = graph.to_dict()
 
     for node in data["nodes"]:
@@ -19,12 +20,16 @@ def serialize_project(graph: Graph, metadata: dict) -> dict:
         "format_version": FORMAT_VERSION,
         "metadata": deepcopy(metadata),
         "graph": data,
+        "events": [
+            {"id": event.id, "name": event.name}
+            for event in events.values()
+        ],
     }
 
     return deepcopy(project)
 
 
-def parse_project(project: dict) -> tuple[Graph, dict]:
+def parse_project(project: dict) -> tuple[Graph, dict, dict]:
     if not isinstance(project, dict):
         raise ValueError("Projeto .vforge deve ser um objeto JSON")
 
@@ -83,4 +88,28 @@ def parse_project(project: dict) -> tuple[Graph, dict]:
     except (KeyError, TypeError, AttributeError) as error:
         raise ValueError("Node ou connection com campos inválidos no .vforge") from error
 
-    return graph, deepcopy(metadata)
+    events = {}
+    records = project.get("events", [])
+
+    if not isinstance(records, list):
+        raise ValueError("Events deve ser uma lista")
+
+    for record in records:
+        if not isinstance(record, dict):
+            raise ValueError("Evento inválido")
+
+        event_id = record.get("id")
+        name = record.get("name")
+
+        if not isinstance(event_id, str) or not event_id or event_id in events:
+            raise ValueError("ID de evento inválido ou duplicado")
+
+        if not isinstance(name, str) or not name.strip() or len(name) > 128:
+            raise ValueError("Nome de evento inválido")
+
+        if any(event.name == name for event in events.values()):
+            raise ValueError("Nome de evento duplicado")
+
+        events[event_id] = Event(event_id, name)
+
+    return graph, deepcopy(metadata), events

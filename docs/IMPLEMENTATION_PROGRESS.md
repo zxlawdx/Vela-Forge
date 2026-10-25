@@ -129,3 +129,10 @@ ambiguous outputs and reachability. Missing End, unreachable nodes and dangling
 outputs are warnings. Problems is refreshed from the API, supports selecting a
 related node and gates the Preview action on fatal errors. Exporters consume the
 same validator when implemented. Traversal terminates even for cyclic graphs.
+
+## Issue #7 — Event Manager
+
+Events have stable IDs/names, separate storage from Graph and a dedicated view.
+Create/list/delete and node usage links are implemented. Emit Event uses a select
+of existing project events. Deleted references remain visible and are reported by
+the validator. Event definitions survive .vforge save/load; no runtime bus added.

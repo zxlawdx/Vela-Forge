@@ -153,3 +153,28 @@ export async function getProblems() {
 
     return parseResponse(response);
 }
+
+
+export async function getEvents() {
+    const response = await fetch(`${API_BASE}/events`);
+
+    return parseResponse(response);
+}
+
+export async function createEvent(name) {
+    const response = await fetch(`${API_BASE}/events`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name}),
+    });
+
+    return parseResponse(response);
+}
+
+export async function deleteEvent(eventId) {
+    const response = await fetch(`${API_BASE}/events/${encodeURIComponent(eventId)}`, {
+        method: "DELETE",
+    });
+
+    return parseResponse(response);
+}

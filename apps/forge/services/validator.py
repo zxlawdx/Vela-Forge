@@ -3,7 +3,7 @@ from collections import Counter
 from apps.forge.domain.registry import node_ports, validate_properties
 
 
-def validate_graph(graph: dict) -> list[dict]:
+def validate_graph(graph: dict, events: dict | None = None) -> list[dict]:
     problems = []
     nodes = graph.get("nodes", [])
     connections = graph.get("connections", [])
@@ -41,6 +41,13 @@ def validate_graph(graph: dict) -> list[dict]:
         except ValueError as error:
             report("error", "invalid_node", str(error), node["id"])
             continue
+
+        if (
+            node["type"] == "event"
+            and events is not None
+            and node["properties"].get("event") not in events
+        ):
+            report("error", "missing_event", "Evento referenciado não existe", node["id"])
 
         required = {
             "branch": "condition",

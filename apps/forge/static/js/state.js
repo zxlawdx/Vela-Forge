@@ -4,6 +4,8 @@ export const state = {
         connections: [],
     },
 
+    events: [],
+
     selectedNodeId: null,
     selectedConnectionId: null,
 

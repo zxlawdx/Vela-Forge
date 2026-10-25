@@ -1,5 +1,6 @@
 import {
     getSelectedNode,
+    state,
 } from "../state.js";
 
 
@@ -43,7 +44,7 @@ export function renderInspector() {
         </div>
 
         <div id="vf-inspector-properties">
-            ${renderProperties(node.properties)}
+            ${renderProperties(node.properties, node.type)}
         </div>
 
         <button type="submit">Salvar propriedades</button>
@@ -119,7 +120,7 @@ export function renderInspector() {
 }
 
 
-function renderProperties(properties = {}) {
+function renderProperties(properties = {}, nodeType = "") {
     const entries = Object.entries(properties);
 
     if (entries.length === 0) {
@@ -132,6 +133,28 @@ function renderProperties(properties = {}) {
 
     return entries
         .map(([key, value]) => {
+            if (nodeType === "event" && key === "event") {
+                const events = [...state.events];
+
+                if (value && !events.some(event => event.id === value)) {
+                    events.push({id: value, name: "Evento ausente"});
+                }
+
+                return `
+                    <div class="vf-field">
+                        <label>Evento</label>
+                        <select data-property="event">
+                            <option value="">Selecione um evento</option>
+                            ${events.map(event => `
+                                <option value="${escapeHtml(event.id)}" ${event.id === value ? "selected" : ""}>
+                                    ${escapeHtml(event.name)}
+                                </option>
+                            `).join("")}
+                        </select>
+                    </div>
+                `;
+            }
+
             if (
                 typeof value === "string" &&
                 value.length > 60

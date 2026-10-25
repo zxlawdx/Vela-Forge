@@ -5,6 +5,7 @@ from tempfile import NamedTemporaryFile
 from uuid import uuid4
 
 from apps.forge.domain.connections import Connection
+from apps.forge.domain.events import Event
 from apps.forge.domain.graph import Graph
 from apps.forge.domain.nodes import Node
 from apps.forge.domain.project import parse_project, serialize_project
@@ -16,27 +17,63 @@ class ForgeService:
     def __init__(self):
         self.graph = Graph()
         self.metadata = {"name": "untitled"}
+        self.events = {}
 
     def validate(self) -> list[dict]:
-        problems = validate_graph(self.graph.to_dict())
+        problems = validate_graph(self.graph.to_dict(), self.events)
 
         return problems
 
+    def create_event(self, name: str) -> Event:
+        if not isinstance(name, str) or not name.strip() or len(name) > 128:
+            raise ValueError("Nome de evento deve ter entre 1 e 128 caracteres")
+
+        name = name.strip()
+
+        if any(event.name == name for event in self.events.values()):
+            raise ValueError("Já existe um evento com esse nome")
+
+        event = Event(id=f"event_{uuid4().hex}", name=name)
+        self.events[event.id] = event
+
+        return event
+
+    def list_events(self) -> list[dict]:
+        events = []
+
+        for event in self.events.values():
+            usages = [
+                node.id
+                for node in self.graph.nodes.values()
+                if node.type == "event" and node.properties.get("event") == event.id
+            ]
+            events.append({"id": event.id, "name": event.name, "usages": usages})
+
+        return events
+
+    def delete_event(self, event_id: str) -> None:
+        if event_id not in self.events:
+            raise ValueError("Evento não existe")
+
+        del self.events[event_id]
+
     def get_project(self) -> dict:
-        project = serialize_project(self.graph, self.metadata)
+        project = serialize_project(self.graph, self.metadata, self.events)
 
         return project
 
     def open_project(self, data: dict) -> dict:
-        graph, metadata = parse_project(data)
+        graph, metadata, events = parse_project(data)
         self.graph = graph
         self.metadata = metadata
+        self.events = events
 
         return self.get_project()
 
     def new_project(self) -> dict:
         self.graph = Graph()
         self.metadata = {"name": "untitled"}
+        self.events = {}
 
         return self.get_project()
 
