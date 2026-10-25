@@ -287,58 +287,27 @@ async function createNodeByType(
    ========================================================= */
 
 function setupDeleteNode() {
-    document
-        .querySelector(
-            "#vf-delete-node"
-        )
-        ?.addEventListener(
-            "click",
-            async () => {
-                const nodeId =
-                    state.selectedNodeId;
+    document.querySelector("#vf-delete-node")?.addEventListener("click", deleteSelectedNode);
+    document.addEventListener("forge:node-delete-request", deleteSelectedNode);
+}
 
 
-                if (!nodeId) {
-                    logConsole(
-                        "Nenhum node selecionado."
-                    );
+async function deleteSelectedNode() {
+    const nodeId = state.selectedNodeId;
 
-                    return;
-                }
+    if (!nodeId) {
+        logConsole("Nenhum node selecionado.");
+        return;
+    }
 
-
-                try {
-                    await deleteNode(
-                        nodeId
-                    );
-
-
-                    state.selectedNodeId =
-                        null;
-
-
-                    logConsole(
-                        `Node removido: ${nodeId}`
-                    );
-
-
-                    await refreshGraph();
-
-                    renderInspector();
-
-                } catch (error) {
-                    console.error(
-                        "[Forge] Erro ao remover node:",
-                        error
-                    );
-
-
-                    logConsole(
-                        `Erro ao remover node: ${error.message}`
-                    );
-                }
-            }
-        );
+    try {
+        await deleteNode(nodeId);
+        state.selectedNodeId = null;
+        logConsole(`Node removido: ${nodeId}`);
+        await refreshGraph();
+    } catch (error) {
+        logConsole(`Erro ao remover node: ${error.message}`);
+    }
 }
 
 

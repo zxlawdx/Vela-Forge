@@ -114,7 +114,7 @@ export function renderInspector() {
     inspector.querySelector("#vf-inspector-delete").addEventListener(
         "click",
         () => {
-            document.querySelector("#vf-delete-node")?.click();
+            document.dispatchEvent(new CustomEvent("forge:node-delete-request"));
         }
     );
 }
