@@ -4,3 +4,4 @@ from . import connections
 from . import project
 from . import events
 from . import assets
+from . import history

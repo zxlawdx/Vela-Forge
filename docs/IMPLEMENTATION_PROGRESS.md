@@ -145,3 +145,12 @@ save/load. Limits: 2 MiB per image, 8 MiB total; HTTP body limit is 16 MiB. The
 backend checks MIME/signature, base64 and sizes. Missing data yields a Problems
 warning and an explicit preview message. Other renderers and 3D are future scope;
 no fixed character or engine dependency was introduced.
+
+## Issue #13 — undo/redo
+
+A bounded, in-memory command history stores before/after project snapshots in the
+service (50 commands). Successful changes record commands; failed changes and
+no-ops do not. Create/delete/move/property/connection operations, events and asset
+imports are reversible, including attached connections. New/Open clears history
+only after a valid load. Undo/Redo buttons and Ctrl/Cmd+Z, Ctrl+Y, Ctrl+Shift+Z call
+the same API; focused text fields retain native text undo. No DOM reversal logic.

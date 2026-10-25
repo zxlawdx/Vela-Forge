@@ -195,3 +195,16 @@ export async function importAsset(asset) {
 
     return parseResponse(response);
 }
+
+
+export async function getHistory() {
+    const response = await fetch(`${API_BASE}/history`);
+
+    return parseResponse(response);
+}
+
+export async function changeHistory(action) {
+    const response = await fetch(`${API_BASE}/history/${action}`, {method: "POST"});
+
+    return parseResponse(response);
+}

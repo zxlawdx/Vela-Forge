@@ -1,3 +1,4 @@
+import {setupHistory, renderHistory} from "./components/history.js";
 import {setupAssets, renderAssets} from "./components/assets.js";
 import {setupEvents, renderEvents} from "./components/events.js";
 import {renderProblems} from "./components/problems.js";
@@ -13,6 +14,7 @@ import {
     getProblems,
     getEvents,
     getAssets,
+    getHistory,
 } from "./api.js";
 
 
@@ -69,6 +71,7 @@ async function bootstrap() {
     setupProjectActions(refreshGraph, logConsole);
     setupEvents(refreshGraph, logConsole);
     setupAssets(refreshGraph, logConsole);
+    setupHistory(refreshGraph, logConsole);
 
     document.querySelector("#vf-preview-project").addEventListener("click", async () => {
         try {
@@ -117,6 +120,7 @@ async function refreshGraph() {
         state.events = await getEvents();
         renderEvents(state.events);
         renderAssets(await getAssets());
+        renderHistory(await getHistory());
         renderInspector();
 
         renderForgeIR();

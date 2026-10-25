@@ -11,11 +11,13 @@ from apps.forge.domain.graph import Graph
 from apps.forge.domain.nodes import Node
 from apps.forge.domain.project import parse_project, serialize_project
 from apps.forge.services.validator import validate_graph
+from apps.forge.services.history import CommandHistory
 from apps.forge.domain.registry import NODE_TYPES, default_properties, validate_properties
 
 
 class ForgeService:
     def __init__(self):
+        self.history = CommandHistory()
         self.graph = Graph()
         self.metadata = {"name": "untitled"}
         self.events = {}
@@ -37,6 +39,8 @@ class ForgeService:
         return problems
 
     def import_asset(self, name: str, mime_type: str, data: str) -> Asset:
+        before = self.get_project()
+
         if data is None:
             raise ValueError("Selecione um arquivo de imagem")
 
@@ -48,6 +52,7 @@ class ForgeService:
             raise ValueError("Assets do projeto excedem o limite total de 8 MiB")
 
         self.assets[asset.id] = asset
+        self.history.record("Import asset", before, self.get_project())
 
         return asset
 
@@ -55,6 +60,8 @@ class ForgeService:
         return self.get_project()["assets"]
 
     def create_event(self, name: str) -> Event:
+        before = self.get_project()
+
         if not isinstance(name, str) or not name.strip() or len(name) > 128:
             raise ValueError("Nome de evento deve ter entre 1 e 128 caracteres")
 
@@ -65,6 +72,7 @@ class ForgeService:
 
         event = Event(id=f"event_{uuid4().hex}", name=name)
         self.events[event.id] = event
+        self.history.record("Create event", before, self.get_project())
 
         return event
 
@@ -82,26 +90,44 @@ class ForgeService:
         return events
 
     def delete_event(self, event_id: str) -> None:
+        before = self.get_project()
+
         if event_id not in self.events:
             raise ValueError("Evento não existe")
 
         del self.events[event_id]
+        self.history.record("Delete event", before, self.get_project())
 
     def get_project(self) -> dict:
         project = serialize_project(self.graph, self.metadata, self.events, self.assets)
 
         return project
 
-    def open_project(self, data: dict) -> dict:
+    def _restore_project(self, data: dict) -> None:
         graph, metadata, events, assets = parse_project(data)
         self.graph = graph
         self.metadata = metadata
         self.events = events
         self.assets = assets
 
+    def open_project(self, data: dict) -> dict:
+        self._restore_project(data)
+        self.history.clear()
+
+        return self.get_project()
+
+    def undo(self) -> dict:
+        self._restore_project(self.history.undo())
+
+        return self.get_project()
+
+    def redo(self) -> dict:
+        self._restore_project(self.history.redo())
+
         return self.get_project()
 
     def new_project(self) -> dict:
+        self.history.clear()
         self.graph = Graph()
         self.metadata = {"name": "untitled"}
         self.events = {}
@@ -110,10 +136,13 @@ class ForgeService:
         return self.get_project()
 
     def rename_project(self, name: str) -> dict:
+        before = self.get_project()
+
         if not isinstance(name, str) or not name.strip() or len(name) > 128:
             raise ValueError("Nome do projeto deve ter entre 1 e 128 caracteres")
 
         self.metadata["name"] = name.strip()
+        self.history.record("Rename project", before, self.get_project())
 
         return self.get_project()
 
@@ -162,6 +191,7 @@ class ForgeService:
         properties: dict | None = None,
         position: dict | None = None,
     ) -> Node:
+        before = self.get_project()
         values = default_properties(node_type)
 
         if properties is not None:
@@ -191,6 +221,8 @@ class ForgeService:
                 self.graph.remove_node(node.id)
                 raise
 
+        self.history.record("Create node", before, self.get_project())
+
         return node
 
     def update_node_position(
@@ -198,7 +230,7 @@ class ForgeService:
         node_id: str,
         position: dict,
     ) -> Node:
-        node = self.graph.update_position(node_id, position)
+        node = self.update_node(node_id, {"position": position})
 
         return node
 
@@ -207,6 +239,7 @@ class ForgeService:
         node_id: str,
         changes: dict,
     ) -> Node:
+        before = self.get_project()
         node = self.graph.get_node(node_id)
 
         if not isinstance(changes, dict) or not changes:
@@ -230,10 +263,15 @@ class ForgeService:
             node.properties = previous_properties
             raise
 
+        self.history.record("Update node", before, self.get_project())
+
         return node
 
     def delete_node(self, node_id: str) -> None:
+        before = self.get_project()
+
         self.graph.remove_node(node_id)
+        self.history.record("Delete node", before, self.get_project())
 
     def get_node_types(self) -> dict:
         return NODE_TYPES
@@ -249,7 +287,10 @@ class ForgeService:
         return self.graph.to_dict()
 
     def delete_connection(self, connection_id: str) -> None:
+        before = self.get_project()
+
         self.graph.disconnect(connection_id)
+        self.history.record("Delete connection", before, self.get_project())
 
     def create_connection(
         self,
@@ -258,6 +299,7 @@ class ForgeService:
         target_node_id: str,
         target_port: str,
     ) -> Connection:
+        before = self.get_project()
         connection = Connection(
             id=f"connection_{uuid4().hex}",
             source_node_id=source_node_id,
@@ -267,6 +309,7 @@ class ForgeService:
         )
 
         self.graph.connect(connection)
+        self.history.record("Create connection", before, self.get_project())
 
         return connection
 
