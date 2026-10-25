@@ -136,3 +136,12 @@ Events have stable IDs/names, separate storage from Graph and a dedicated view.
 Create/list/delete and node usage links are implemented. Emit Event uses a select
 of existing project events. Deleted references remain visible and are reported by
 the validator. Event definitions survive .vforge save/load; no runtime bus added.
+
+## Issue #8 — asset import and Scene Preview
+
+PNG/JPEG/GIF/WebP can be imported, listed under Items > Assets and selected for
+Scene Preview. Metadata and base64 content are embedded in .vforge for portable
+save/load. Limits: 2 MiB per image, 8 MiB total; HTTP body limit is 16 MiB. The
+backend checks MIME/signature, base64 and sizes. Missing data yields a Problems
+warning and an explicit preview message. Other renderers and 3D are future scope;
+no fixed character or engine dependency was introduced.

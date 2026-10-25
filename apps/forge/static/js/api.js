@@ -178,3 +178,20 @@ export async function deleteEvent(eventId) {
 
     return parseResponse(response);
 }
+
+
+export async function getAssets() {
+    const response = await fetch(`${API_BASE}/assets`);
+
+    return parseResponse(response);
+}
+
+export async function importAsset(asset) {
+    const response = await fetch(`${API_BASE}/assets`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(asset),
+    });
+
+    return parseResponse(response);
+}

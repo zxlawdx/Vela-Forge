@@ -1,3 +1,4 @@
+import {setupAssets, renderAssets} from "./components/assets.js";
 import {setupEvents, renderEvents} from "./components/events.js";
 import {renderProblems} from "./components/problems.js";
 import {setupProjectActions} from "./components/project.js";
@@ -11,6 +12,7 @@ import {
     getProject,
     getProblems,
     getEvents,
+    getAssets,
 } from "./api.js";
 
 
@@ -66,6 +68,7 @@ async function bootstrap() {
     setupPropertyEditing();
     setupProjectActions(refreshGraph, logConsole);
     setupEvents(refreshGraph, logConsole);
+    setupAssets(refreshGraph, logConsole);
 
     document.querySelector("#vf-preview-project").addEventListener("click", async () => {
         try {
@@ -113,6 +116,7 @@ async function refreshGraph() {
 
         state.events = await getEvents();
         renderEvents(state.events);
+        renderAssets(await getAssets());
         renderInspector();
 
         renderForgeIR();

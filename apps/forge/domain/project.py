@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+from .assets import Asset, validate_asset
 from .connections import Connection
 from .events import Event
 from .graph import Graph
@@ -10,7 +11,7 @@ from .registry import default_properties, validate_properties
 FORMAT_VERSION = 1
 
 
-def serialize_project(graph: Graph, metadata: dict, events: dict) -> dict:
+def serialize_project(graph: Graph, metadata: dict, events: dict, assets: dict) -> dict:
     data = graph.to_dict()
 
     for node in data["nodes"]:
@@ -20,6 +21,10 @@ def serialize_project(graph: Graph, metadata: dict, events: dict) -> dict:
         "format_version": FORMAT_VERSION,
         "metadata": deepcopy(metadata),
         "graph": data,
+        "assets": [
+            {"id": asset.id, "name": asset.name, "mime_type": asset.mime_type, "data": asset.data}
+            for asset in assets.values()
+        ],
         "events": [
             {"id": event.id, "name": event.name}
             for event in events.values()
@@ -29,7 +34,7 @@ def serialize_project(graph: Graph, metadata: dict, events: dict) -> dict:
     return deepcopy(project)
 
 
-def parse_project(project: dict) -> tuple[Graph, dict, dict]:
+def parse_project(project: dict) -> tuple[Graph, dict, dict, dict]:
     if not isinstance(project, dict):
         raise ValueError("Projeto .vforge deve ser um objeto JSON")
 
@@ -112,4 +117,27 @@ def parse_project(project: dict) -> tuple[Graph, dict, dict]:
 
         events[event_id] = Event(event_id, name)
 
-    return graph, deepcopy(metadata), events
+    assets = {}
+    records = project.get("assets", [])
+    total_size = 0
+
+    if not isinstance(records, list):
+        raise ValueError("Assets deve ser uma lista")
+
+    for record in records:
+        if not isinstance(record, dict):
+            raise ValueError("Asset inválido")
+
+        asset_id = record.get("id")
+
+        if not isinstance(asset_id, str) or not asset_id or asset_id in assets:
+            raise ValueError("ID de asset inválido ou duplicado")
+
+        asset = Asset(asset_id, record.get("name"), record.get("mime_type"), record.get("data"))
+        total_size += validate_asset(asset)
+        assets[asset.id] = asset
+
+    if total_size > 8 * 1024 * 1024:
+        raise ValueError("Assets do projeto excedem o limite total de 8 MiB")
+
+    return graph, deepcopy(metadata), events, assets

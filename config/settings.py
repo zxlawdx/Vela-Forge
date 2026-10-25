@@ -42,6 +42,7 @@ API = {
     "server": "waitress",
     "workers": 4,
     "docs_enabled": True,
+    "max_body_size": 16 * 1024 * 1024,
 }
 
 # ─── Desenvolvimento ──────────────────────────────────────────────────────────

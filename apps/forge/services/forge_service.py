@@ -4,6 +4,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from uuid import uuid4
 
+from apps.forge.domain.assets import Asset, validate_asset
 from apps.forge.domain.connections import Connection
 from apps.forge.domain.events import Event
 from apps.forge.domain.graph import Graph
@@ -18,11 +19,40 @@ class ForgeService:
         self.graph = Graph()
         self.metadata = {"name": "untitled"}
         self.events = {}
+        self.assets = {}
 
     def validate(self) -> list[dict]:
         problems = validate_graph(self.graph.to_dict(), self.events)
 
+        for asset in self.assets.values():
+            if asset.data is None:
+                problems.append({
+                    "severity": "warning",
+                    "code": "missing_asset",
+                    "message": f"Asset indisponível: {asset.name}",
+                    "node_id": None,
+                    "connection_id": None,
+                })
+
         return problems
+
+    def import_asset(self, name: str, mime_type: str, data: str) -> Asset:
+        if data is None:
+            raise ValueError("Selecione um arquivo de imagem")
+
+        asset = Asset(f"asset_{uuid4().hex}", name, mime_type, data)
+        size = validate_asset(asset)
+        total_size = sum(validate_asset(item) for item in self.assets.values())
+
+        if size + total_size > 8 * 1024 * 1024:
+            raise ValueError("Assets do projeto excedem o limite total de 8 MiB")
+
+        self.assets[asset.id] = asset
+
+        return asset
+
+    def list_assets(self) -> list[dict]:
+        return self.get_project()["assets"]
 
     def create_event(self, name: str) -> Event:
         if not isinstance(name, str) or not name.strip() or len(name) > 128:
@@ -58,15 +88,16 @@ class ForgeService:
         del self.events[event_id]
 
     def get_project(self) -> dict:
-        project = serialize_project(self.graph, self.metadata, self.events)
+        project = serialize_project(self.graph, self.metadata, self.events, self.assets)
 
         return project
 
     def open_project(self, data: dict) -> dict:
-        graph, metadata, events = parse_project(data)
+        graph, metadata, events, assets = parse_project(data)
         self.graph = graph
         self.metadata = metadata
         self.events = events
+        self.assets = assets
 
         return self.get_project()
 
@@ -74,6 +105,7 @@ class ForgeService:
         self.graph = Graph()
         self.metadata = {"name": "untitled"}
         self.events = {}
+        self.assets = {}
 
         return self.get_project()
 
