@@ -69,6 +69,9 @@ def parse_project(project: dict) -> tuple[Graph, dict, dict, dict]:
             if not isinstance(node_id, str) or not node_id:
                 raise ValueError("ID de node inválido")
 
+            if not isinstance(record["properties"], dict):
+                raise ValueError("Propriedades de node devem ser um objeto")
+
             properties = default_properties(record["type"])
             properties.update(record["properties"])
             validate_properties(record["type"], properties)
@@ -81,6 +84,10 @@ def parse_project(project: dict) -> tuple[Graph, dict, dict, dict]:
 
             if not isinstance(connection_id, str) or not connection_id:
                 raise ValueError("ID de connection inválido")
+
+            for field in ("source_node_id", "source_port", "target_node_id", "target_port"):
+                if not isinstance(record[field], str):
+                    raise ValueError("Campos de connection devem ser textos")
 
             connection = Connection(
                 id=connection_id,

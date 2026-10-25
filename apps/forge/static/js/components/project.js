@@ -14,6 +14,10 @@ export function setupProjectActions(refreshGraph, logConsole) {
         }
 
         try {
+            if (file.size > 16 * 1024 * 1024) {
+                throw new Error("Projeto excede o limite de 16 MiB");
+            }
+
             const project = JSON.parse(await file.text());
             await openProject(project);
             await refreshGraph();

@@ -219,6 +219,9 @@ class ForgeService:
         if target.suffix.lower() != ".vforge":
             raise ValueError("Use a extensão .vforge")
 
+        if target.stat().st_size > 16 * 1024 * 1024:
+            raise ValueError("Projeto excede o limite de 16 MiB")
+
         try:
             data = json.loads(target.read_text(encoding="utf-8"))
         except (UnicodeError, json.JSONDecodeError) as error:

@@ -48,3 +48,18 @@ def test_broken_file_is_understandable(tmp_path):
 
     with pytest.raises(ValueError, match="JSON UTF-8"):
         ForgeService().open_project_file(str(path))
+
+
+@pytest.mark.parametrize("properties", [None, [], [["text", "invalid"]], "invalid"])
+def test_malformed_properties_do_not_replace_project(properties):
+    service = ForgeService()
+    node = service.create_node("dialogue")
+    before = service.get_project()
+    data = deepcopy(before)
+    data["graph"]["nodes"][0]["properties"] = properties
+
+    with pytest.raises(ValueError):
+        service.open_project(data)
+
+    assert service.get_project() == before
+    assert service.graph.get_node(node.id) is node
