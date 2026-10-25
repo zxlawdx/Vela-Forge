@@ -89,3 +89,14 @@ Editing integrates the existing history. Both exporters consume the same conditi
 All comparison operators passed actual Godot execution against true/false cases;
 Unity output passed syntax parsing, not engine compilation. Browser editing and
 undo/redo passed. Equality distinguishes booleans from numeric values.
+
+## Typed project variables
+
+Project declarations now define string/number/boolean variables and initial values.
+Items > Variables creates/deletes them; Set Variable and Branch use project
+selectors. The validator reports missing references and incompatible assignments/
+comparisons, blocking export. Deletion keeps references visible and is undoable.
+Declarations survive .vforge round trips; legacy files without declarations infer
+them from Set Variable first, then Branch, and save the explicit model thereafter.
+Both runners initialize declared defaults. Browser create/select/delete/undo and
+HTTP/domain/history/malformed-file checks passed, as did real Godot comparisons.

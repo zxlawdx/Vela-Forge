@@ -1,3 +1,4 @@
+import {setupVariables, renderVariables} from "./components/variables.js";
 import {setupPreferences} from "./components/preferences.js";
 import {setupExport} from "./components/export.js";
 import {setupHistory, renderHistory} from "./components/history.js";
@@ -19,6 +20,7 @@ import {
     getAssets,
     getHistory,
     getNodeTypes,
+    getVariables,
 } from "./api.js";
 
 
@@ -84,6 +86,7 @@ async function bootstrap() {
     setupPropertyEditing();
     setupProjectActions(refreshGraph, logConsole);
     setupEvents(refreshGraph, logConsole);
+    setupVariables(refreshGraph, logConsole);
     setupAssets(refreshGraph, logConsole);
     setupHistory(refreshGraph, logConsole);
     setupExport(refreshGraph, logConsole);
@@ -133,6 +136,8 @@ async function refreshGraph() {
 
         renderGraph();
 
+        state.variables = await getVariables();
+        renderVariables(state.variables);
         state.events = await getEvents();
         renderEvents(state.events);
         renderAssets(await getAssets());

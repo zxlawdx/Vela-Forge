@@ -21,6 +21,9 @@ func _ready():
     panel.position = Vector2(32, 32)
     panel.custom_minimum_size = Vector2(600, 300)
     add_child(panel)
+    for variable in project.get("variables", []):
+        if not variables.has(variable.name):
+            variables[variable.name] = variable.default
     for item in project.graph.nodes:
         nodes[item.id] = item
     for item in project.graph.nodes:

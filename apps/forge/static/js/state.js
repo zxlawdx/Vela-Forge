@@ -5,6 +5,7 @@ export const state = {
     },
 
     events: [],
+    variables: [],
     nodeTypes: {},
 
     selectedNodeId: null,

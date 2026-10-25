@@ -14,7 +14,6 @@ public partial class ForgeRunner : MonoBehaviour
     public event Action<string, string> EventEmitted;
     public event Action FlowFinished;
 
-    private readonly Dictionary<string, object> variables = new Dictionary<string, object>();
     private NodeData waiting;
     private bool finished;
     private string flowError;
@@ -263,8 +262,11 @@ def export_project(project: dict) -> dict[str, str]:
         "        {" + csharp_value(event["id"]) + ", " + csharp_value(event["name"]) + "}"
         for event in sorted(project.get("events", []), key=lambda item: item["id"])
     ]
+    variable_values = {item["name"]: item["default"] for item in project.get("variables", [])}
+    variable_line = csharp_value(variable_values)
     data = (
         "using System.Collections.Generic;\n\npublic partial class ForgeRunner\n{\n"
+        + "    private readonly Dictionary<string, object> variables = " + variable_line + ";\n"
         "    private readonly Dictionary<string, NodeData> nodes = new Dictionary<string, NodeData>\n    {\n"
         + ",\n".join(node_lines) + "\n    };\n\n"
         "    private readonly ConnectionData[] connections = new ConnectionData[]\n    {\n"

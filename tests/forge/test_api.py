@@ -187,3 +187,17 @@ def test_reconnection_http_preserves_id(client):
     assert client("GET", "/graph")[1]["connections"] == [updated]
     assert client("PATCH", path, {"target_port": "out"})[0] == 400
     assert client("GET", "/graph")[1]["connections"] == [updated]
+
+
+def test_variable_http_history_and_validation(client):
+    status, variable = client("POST", "/variables", {"name": "score", "type": "number", "default": 0})
+    assert status == 200
+    assert client("GET", "/variables")[1] == [variable]
+    _, node = client("POST", "/nodes", {"type": "branch", "properties": {"condition": {
+        "variable": "score", "operator": "greater_than", "value": 10,
+    }}})
+    assert not any(p["code"] == "missing_variable" for p in client("GET", "/problems")[1])
+    assert client("DELETE", "/variables/score")[0] == 200
+    assert any(p["code"] == "missing_variable" for p in client("GET", "/problems")[1])
+    assert client("POST", "/history/undo")[0] == 200
+    assert client("GET", "/variables")[1] == [variable]

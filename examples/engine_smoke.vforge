@@ -123,5 +123,12 @@
       "name": "smoke_done"
     }
   ],
-  "assets": []
+  "assets": [],
+  "variables": [
+    {
+      "name": "has_key",
+      "type": "boolean",
+      "default": false
+    }
+  ]
 }

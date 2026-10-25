@@ -98,7 +98,19 @@ export function renderInspector() {
 
                 if (node.type === "branch") {
                     const variable = inspector.querySelector('[data-condition="variable"]').value;
-                    const operator = inspector.querySelector('[data-condition="operator"]').value;
+                    const variableSelect = inspector.querySelector('[data-property="variable"]');
+
+    if (variableSelect) {
+        variableSelect.addEventListener("change", () => {
+            const variable = state.variables.find(item => item.name === variableSelect.value);
+
+            if (variable) {
+                inspector.querySelector('[data-property="value"]').value = JSON.stringify(variable.default);
+            }
+        });
+    }
+
+    const operator = inspector.querySelector('[data-condition="operator"]').value;
                     const field = inspector.querySelector('[data-condition="value"]');
                     properties.condition = {variable, operator, value: field.disabled ? null : JSON.parse(field.value)};
                 }
@@ -137,6 +149,21 @@ export function renderInspector() {
 }
 
 
+function variableOptions(selected) {
+    const variables = [...state.variables];
+
+    if (selected && !variables.some(variable => variable.name === selected)) {
+        variables.push({name: selected, type: "ausente"});
+    }
+
+    return '<option value="">Selecione uma variável</option>' + variables.map(variable => `
+        <option value="${escapeHtml(variable.name)}" ${variable.name === selected ? "selected" : ""}>
+            ${escapeHtml(variable.name)} (${escapeHtml(variable.type)})
+        </option>
+    `).join("");
+}
+
+
 function renderProperties(properties = {}, nodeType = "") {
     const entries = Object.entries(properties);
 
@@ -156,7 +183,7 @@ function renderProperties(properties = {}, nodeType = "") {
                 return `
                     <div class="vf-field">
                         <label>Variável</label>
-                        <input data-condition="variable" value="${escapeHtml(value.variable)}">
+                        <select data-condition="variable">${variableOptions(value.variable)}</select>
                         <label>Comparação</label>
                         <select data-condition="operator">
                             ${Object.entries(operators).map(([name, label]) => `
@@ -167,6 +194,11 @@ function renderProperties(properties = {}, nodeType = "") {
                         <input data-condition="value" value="${escapeHtml(JSON.stringify(value.value))}">
                     </div>
                 `;
+            }
+
+            if (nodeType === "set-variable" && key === "variable") {
+                return `<div class="vf-field"><label>Variável</label>
+                    <select data-property="variable">${variableOptions(value)}</select></div>`;
             }
 
             if (nodeType === "set-variable" && key === "value") {

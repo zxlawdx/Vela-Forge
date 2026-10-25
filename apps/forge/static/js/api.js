@@ -277,3 +277,26 @@ export async function getNodeTypes() {
 
     return parseResponse(response);
 }
+
+
+export async function getVariables() {
+    const response = await fetch(`${API_BASE}/variables`);
+
+    return parseResponse(response);
+}
+
+export async function createVariable(variable) {
+    const response = await fetch(`${API_BASE}/variables`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(variable),
+    });
+
+    return parseResponse(response);
+}
+
+export async function deleteVariable(name) {
+    const response = await fetch(`${API_BASE}/variables/${encodeURIComponent(name)}`, {method: "DELETE"});
+
+    return parseResponse(response);
+}

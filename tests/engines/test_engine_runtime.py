@@ -87,6 +87,10 @@ def test_unity_compile_with_real_engine_references(tmp_path):
 ])
 def test_godot_structured_comparison_runtime(tmp_path, operator, value, scenarios):
     service = smoke_service()
+    if type(value) in (int, float):
+        service.delete_variable("has_key")
+        service.create_variable("has_key", "number", 0)
+
     service.update_node("branch", {"properties": {"condition": {
         "variable": "has_key", "operator": operator, "value": value,
     }}})

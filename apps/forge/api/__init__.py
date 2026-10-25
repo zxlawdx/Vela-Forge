@@ -7,3 +7,4 @@ from . import assets
 from . import history
 from . import exports
 from . import preferences
+from . import variables

@@ -6,13 +6,20 @@ from .connections import Connection
 from .events import Event
 from .graph import Graph
 from .nodes import Node
+from .variables import Variable, validate_variable, infer_legacy_variables
 from .registry import default_properties, validate_properties
 
 
 FORMAT_VERSION = 1
 
 
-def serialize_project(graph: Graph, metadata: dict, events: dict, assets: dict) -> dict:
+def serialize_project(
+    graph: Graph,
+    metadata: dict,
+    events: dict,
+    assets: dict,
+    variables: dict,
+) -> dict:
     data = graph.to_dict()
 
     for node in data["nodes"]:
@@ -22,6 +29,10 @@ def serialize_project(graph: Graph, metadata: dict, events: dict, assets: dict) 
         "format_version": FORMAT_VERSION,
         "metadata": deepcopy(metadata),
         "graph": data,
+        "variables": [
+            {"name": variable.name, "type": variable.type, "default": variable.default}
+            for variable in variables.values()
+        ],
         "assets": [
             {"id": asset.id, "name": asset.name, "mime_type": asset.mime_type, "data": asset.data}
             for asset in assets.values()
@@ -35,7 +46,7 @@ def serialize_project(graph: Graph, metadata: dict, events: dict, assets: dict) 
     return deepcopy(project)
 
 
-def parse_project(project: dict) -> tuple[Graph, dict, dict, dict]:
+def parse_project(project: dict) -> tuple[Graph, dict, dict, dict, dict]:
     if not isinstance(project, dict):
         raise ValueError("Projeto .vforge deve ser um objeto JSON")
 
@@ -152,4 +163,25 @@ def parse_project(project: dict) -> tuple[Graph, dict, dict, dict]:
     if total_size > 8 * 1024 * 1024:
         raise ValueError("Assets do projeto excedem o limite total de 8 MiB")
 
-    return graph, deepcopy(metadata), events, assets
+    variables = {}
+    records = project.get("variables", [])
+
+    if not isinstance(records, list):
+        raise ValueError("Variables deve ser uma lista")
+
+    for record in records:
+        if not isinstance(record, dict):
+            raise ValueError("Variável inválida")
+
+        variable = Variable(record.get("name"), record.get("type"), record.get("default"))
+        validate_variable(variable)
+
+        if variable.name in variables:
+            raise ValueError("Nome de variável duplicado")
+
+        variables[variable.name] = variable
+
+    if "variables" not in project:
+        variables = infer_legacy_variables(graph.nodes.values())
+
+    return graph, deepcopy(metadata), events, assets, variables

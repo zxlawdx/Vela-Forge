@@ -104,7 +104,14 @@ const {chromium} = require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES
         await page.reload();
         await page.waitForFunction(() => document.querySelector("#vf-console")?.textContent.includes("iniciado"));
         await page.locator(".vf-node-head").click();
-        await page.locator('[data-condition="variable"]').fill("score");
+        await page.click('[data-item-view="variables"]');
+        await page.locator('#vf-variable-form [name="name"]').fill("score");
+        await page.locator('#vf-variable-form [name="type"]').selectOption("number");
+        await page.locator('#vf-variable-form [name="default"]').fill("0");
+        await page.locator('#vf-variable-form button[type="submit"]').click();
+        await page.waitForFunction(() => document.querySelector('#vf-variables [data-delete-variable="score"]'));
+        await page.locator(".vf-node-head").click();
+        await page.locator('[data-condition="variable"]').selectOption("score");
         await page.locator('[data-condition="operator"]').selectOption("greater_than");
         await page.locator('[data-condition="value"]').fill("10");
         await page.locator('#vf-node-properties-form button[type="submit"]').click();
@@ -115,6 +122,15 @@ const {chromium} = require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES
         await page.keyboard.press("Control+y");
         await page.waitForFunction(() => JSON.parse(document.querySelector("#vf-ir-output").textContent).nodes[0].properties.condition.value === 10);
         console.log("PASS: structured Branch editor, JSON comparison value, undo/redo");
+        page.once("dialog", dialog => dialog.accept());
+        await page.click('[data-delete-variable="score"]');
+        await page.waitForFunction(async () => {
+            const problems = await (await fetch("/api/forge/problems")).json();
+            return problems.some(problem => problem.code === "missing_variable");
+        });
+        await page.keyboard.press("Control+z");
+        await page.waitForFunction(() => document.querySelector('#vf-variables [data-delete-variable="score"]'));
+        console.log("PASS: typed variable creation, reference selection, deletion warning and undo");
 
         const preview = await page.evaluate(async () => {
             const {renderAssetPreview, previewRenderers} = await import("/__vela__/static/forge/js/components/preview.js");

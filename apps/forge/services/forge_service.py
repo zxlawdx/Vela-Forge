@@ -18,6 +18,7 @@ from apps.forge.domain.project import parse_project, serialize_project
 from apps.forge.services.validator import validate_graph
 from apps.forge.services.history import CommandHistory
 from apps.forge.services.editor_state import EditorState
+from apps.forge.domain.variables import Variable, validate_variable
 from apps.forge.domain.registry import NODE_TYPES, default_properties, validate_properties
 
 
@@ -30,6 +31,7 @@ class ForgeService:
         self.metadata = {"name": "untitled"}
         self.events = {}
         self.assets = {}
+        self.variables = {}
 
     def generate_export(self, engine: str) -> dict:
         problems = self.validate()
@@ -102,7 +104,7 @@ class ForgeService:
                     temporary_path.unlink(missing_ok=True)
 
     def validate(self) -> list[dict]:
-        problems = validate_graph(self.graph.to_dict(), self.events)
+        problems = validate_graph(self.graph.to_dict(), self.events, self.variables)
 
         for asset in self.assets.values():
             if asset.data is None:
@@ -176,17 +178,42 @@ class ForgeService:
         del self.events[event_id]
         self.history.record("Delete event", before, self.get_project())
 
+    def create_variable(self, name: str, variable_type: str, default) -> Variable:
+        variable = Variable(name, variable_type, default)
+        validate_variable(variable)
+
+        if name in self.variables:
+            raise ValueError("Variável já existe")
+
+        before = self.get_project()
+        self.variables[name] = variable
+        self.history.record("Create variable", before, self.get_project())
+
+        return variable
+
+    def list_variables(self) -> list[dict]:
+        return self.get_project()["variables"]
+
+    def delete_variable(self, name: str) -> None:
+        if name not in self.variables:
+            raise ValueError("Variável não existe")
+
+        before = self.get_project()
+        del self.variables[name]
+        self.history.record("Delete variable", before, self.get_project())
+
     def get_project(self) -> dict:
-        project = serialize_project(self.graph, self.metadata, self.events, self.assets)
+        project = serialize_project(self.graph, self.metadata, self.events, self.assets, self.variables)
 
         return project
 
     def _restore_project(self, data: dict) -> None:
-        graph, metadata, events, assets = parse_project(data)
+        graph, metadata, events, assets, variables = parse_project(data)
         self.graph = graph
         self.metadata = metadata
         self.events = events
         self.assets = assets
+        self.variables = variables
 
     def open_project(self, data: dict) -> dict:
         self._restore_project(data)
@@ -212,6 +239,7 @@ class ForgeService:
         self.metadata = {"name": "untitled"}
         self.events = {}
         self.assets = {}
+        self.variables = {}
 
         return self.get_project()
 
