@@ -1,0 +1,74 @@
+<header class="vf-topbar">
+
+  <div class="vf-brand">
+    <div class="vf-brand-mark">V</div>
+
+    <div>
+      <strong>Vela Forge</strong>
+      <span>Visual Logic Editor</span>
+    </div>
+  </div>
+
+  <nav class="vf-menu" aria-label="Main menu">
+
+    <button
+      class="vf-menu-btn"
+      data-action="file"
+    >
+      File
+    </button>
+
+    <button
+      class="vf-menu-btn"
+      data-action="edit"
+    >
+      Edit
+    </button>
+
+    <button
+      class="vf-menu-btn"
+      data-action="graph"
+    >
+      Graph
+    </button>
+
+    <button
+      class="vf-menu-btn"
+      data-action="build"
+    >
+      Build
+    </button>
+
+  </nav>
+
+  <div class="vf-project-name">
+    Project:
+    <b id="vf-project-name">untitled</b>
+  </div>
+
+  <div class="vf-grow"></div>
+
+  <button
+    class="vf-run-btn"
+    id="vf-preview-project"
+  >
+    ▶ Preview
+  </button>
+
+  <label class="vf-target">
+
+    <span>Target</span>
+
+    <select id="vf-engine">
+      <option value="godot">
+        Godot 4
+      </option>
+
+      <option value="unity">
+        Unity
+      </option>
+    </select>
+
+  </label>
+
+</header>

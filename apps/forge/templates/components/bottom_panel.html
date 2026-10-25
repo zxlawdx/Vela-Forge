@@ -1,0 +1,105 @@
+<section class="vf-bottom-pane">
+
+  <div
+    class="vf-bottom-tabs"
+    id="vf-bottom-tabs"
+  >
+
+    <button data-tab="problems">
+      Problems
+      <span class="vf-count">
+        0
+      </span>
+    </button>
+
+    <button data-tab="generated">
+      Generated Code
+    </button>
+
+    <button
+      class="active"
+      data-tab="ir"
+    >
+      Forge IR
+    </button>
+
+    <button data-tab="console">
+      Console
+    </button>
+
+    <button data-tab="inspector">
+      Inspector
+    </button>
+
+    <button data-tab="visible">
+      Visible Conf
+    </button>
+
+  </div>
+
+
+  <div class="vf-tab-content">
+
+    <section
+      class="vf-tab-panel"
+      data-panel="problems"
+    >
+      <pre class="vf-code-view">No problems detected.</pre>
+    </section>
+
+
+    <section
+      class="vf-tab-panel"
+      data-panel="generated"
+    >
+      <pre
+        class="vf-code-view"
+        id="vf-generated-code"
+      ></pre>
+    </section>
+
+
+    <section
+      class="vf-tab-panel active"
+      data-panel="ir"
+    >
+      <pre
+        class="vf-code-view"
+        id="vf-ir-output"
+      >{ "nodes": [], "connections": [] }</pre>
+    </section>
+
+
+    <section
+      class="vf-tab-panel"
+      data-panel="console"
+    >
+      <pre
+        class="vf-code-view"
+        id="vf-console"
+      >Forge console ready.</pre>
+    </section>
+
+
+    <section
+      class="vf-tab-panel"
+      data-panel="inspector"
+    >
+      <div class="vf-bottom-inspector">
+        Advanced node and debugging properties.
+      </div>
+    </section>
+
+
+    <section
+      class="vf-tab-panel"
+      data-panel="visible"
+    >
+      <div class="vf-bottom-inspector">
+        Editor presentation and visibility settings.
+      </div>
+    </section>
+
+  </div>
+
+</section>

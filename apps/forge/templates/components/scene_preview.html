@@ -1,0 +1,72 @@
+<section class="vf-preview-pane">
+
+  <div class="vf-pane-head">
+
+    <span>
+      Scene Preview
+    </span>
+
+    <span class="vf-grow"></span>
+
+    <button
+      class="vf-mini-btn"
+      data-action="preview-camera-reset"
+      title="Reset camera"
+    >
+      ⌖
+    </button>
+
+  </div>
+
+
+  <div
+    class="vf-preview-stage"
+    id="vf-scene-preview"
+  >
+
+    <div class="vf-preview-grid"></div>
+
+
+    <!--
+      Assets importados futuramente entram aqui.
+
+      Exemplo:
+
+      <img ...>
+
+      <canvas ...>
+
+      <model-viewer ...>
+
+      WebGL / Three.js / Babylon / engine próprio etc.
+    -->
+
+    <div
+      class="vf-preview-layer"
+      id="vf-preview-layer"
+    ></div>
+
+
+    <div
+      class="vf-preview-empty"
+      id="vf-preview-empty"
+    >
+
+      <strong>
+        No asset loaded
+      </strong>
+
+      <span>
+        Import an asset or select a scene object to preview.
+      </span>
+
+    </div>
+
+
+    <div class="vf-preview-label">
+      Animation / Scene viewport
+    </div>
+
+  </div>
+
+</section>

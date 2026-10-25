@@ -1,0 +1,119 @@
+<link rel="stylesheet" href="{{ static('forge/css/editor.css') }}">
+
+<section class="vf-app" id="vela-forge">
+
+  {{ topbar }}
+
+  {{ commandbars }}
+
+  <section class="vf-workbench">
+
+    {{ sidebar }}
+
+    <main class="vf-main-pane">
+
+  {{ mode_tabs }}
+
+  <div class="vf-mode-stage">
+
+    <!-- ANIMATION SCENE -->
+    <section
+      class="vf-mode-view active"
+      data-mode-view="animation"
+    >
+
+      <section
+        class="vf-upper-workspace"
+        id="vf-animation-workspace"
+      >
+
+        {{ scene_preview }}
+
+        <div
+          class="vf-resizer vf-resizer--vertical"
+          id="vf-preview-resizer"
+          title="Resize preview"
+        ></div>
+
+        {{ graph_canvas }}
+
+      </section>
+
+    </section>
+
+
+    <!-- EVENT MANAGER -->
+    <section
+      class="vf-mode-view"
+      data-mode-view="event"
+    >
+
+      <section class="vf-event-manager">
+
+        <header class="vf-event-manager-toolbar">
+
+          <strong>
+            Event Manager
+          </strong>
+
+          <span class="vf-grow"></span>
+
+          <button data-action="create-event">
+            + Event
+          </button>
+
+          <button data-action="event-settings">
+            Settings
+          </button>
+
+        </header>
+
+
+        <div class="vf-event-manager-body">
+
+          <div class="vf-event-manager-empty">
+
+            <strong>
+              Event Manager
+            </strong>
+
+            <span>
+              Events, triggers and game signals will be managed here.
+            </span>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </section>
+
+  </div>
+
+
+  <!-- RESIZE VERTICAL DO PAINEL INFERIOR -->
+
+  <div
+    class="vf-resizer vf-resizer--horizontal"
+    id="vf-bottom-resizer"
+    title="Resize bottom panel"
+  ></div>
+
+
+  {{ bottom_panel }}
+
+</main>
+
+    {{ inspector }}
+
+  </section>
+
+  {{ statusbar }}
+
+</section>
+
+<script
+  type="module"
+  src="{{ static('forge/js/editor.js') }}"
+></script>

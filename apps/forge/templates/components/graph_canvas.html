@@ -1,0 +1,87 @@
+<section
+  class="vf-graph-pane"
+  id="vf-workspace"
+>
+
+  <div class="vf-graph-toolbar">
+
+    <button
+      class="vf-icon-btn"
+      data-tool="select"
+      title="Select"
+    >
+      ↖
+    </button>
+
+    <button
+      class="vf-icon-btn"
+      data-tool="pan"
+      title="Pan"
+    >
+      ✥
+    </button>
+
+    <span class="vf-toolbar-divider"></span>
+
+    <button
+      class="vf-icon-btn"
+      id="vf-zoom-out"
+    >
+      −
+    </button>
+
+    <span
+      class="vf-zoom-label"
+      id="vf-zoom-label"
+    >
+      100%
+    </span>
+
+    <button
+      class="vf-icon-btn"
+      id="vf-zoom-in"
+    >
+      ＋
+    </button>
+
+    <button
+      class="vf-icon-btn"
+      id="vf-zoom-reset"
+      title="Reset view"
+    >
+      ⌖
+    </button>
+
+  </div>
+
+
+  <div class="vf-breadcrumb">
+
+    <span>Graphs</span>
+
+    <span>›</span>
+
+    <b id="vf-current-graph">
+      Main Flow
+    </b>
+
+  </div>
+
+
+  <div
+    class="vf-graph-world"
+    id="vf-world"
+  >
+
+    <svg id="vf-connections"></svg>
+
+    <div id="vf-node-layer"></div>
+
+  </div>
+
+
+  <div class="vf-floating-tip">
+    Drag nodes • Wheel to zoom • Shift + drag to pan
+  </div>
+
+</section>
