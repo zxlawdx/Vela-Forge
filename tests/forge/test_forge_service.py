@@ -71,3 +71,44 @@ def test_invalid_position_preserves_node(position):
         service.update_node_position(node.id, position)
 
     assert node.position == previous
+
+
+def test_property_update_is_partial():
+    service = ForgeService()
+    node = service.create_node("dialogue", {"actor": "A", "text": "Before"})
+
+    result = service.update_node(node.id, {"properties": {"text": "After"}})
+
+    assert result is node
+    assert node.properties == {"actor": "A", "text": "After"}
+    assert service.get_graph()["nodes"][0]["properties"] == node.properties
+
+
+def test_delete_node_removes_only_attached_connections():
+    service = ForgeService()
+    first = service.create_node("dialogue")
+    second = service.create_node("dialogue")
+    third = service.create_node("dialogue")
+    attached = service.create_connection(first.id, "out", second.id, "in")
+    remaining = service.create_connection(first.id, "out", third.id, "in")
+
+    service.delete_node(second.id)
+
+    assert second.id not in service.graph.nodes
+    assert attached.id not in service.graph.connections
+    assert list(service.graph.connections) == [remaining.id]
+
+
+def test_invalid_property_patch_is_atomic():
+    service = ForgeService()
+    node = service.create_node("dialogue")
+    position = node.position.copy()
+
+    with pytest.raises(ValueError):
+        service.update_node(node.id, {
+            "position": {"x": 1, "y": 2},
+            "properties": [],
+        })
+
+    assert node.position == position
+    assert node.properties == {}

@@ -37,6 +37,33 @@ class ForgeService:
 
         return node
 
+    def update_node(
+        self,
+        node_id: str,
+        changes: dict,
+    ) -> Node:
+        node = self.graph.get_node(node_id)
+
+        if not isinstance(changes, dict) or not changes:
+            raise ValueError("Informe position ou properties")
+
+        if set(changes) - {"position", "properties"}:
+            raise ValueError("Somente position e properties podem ser alterados")
+
+        if "properties" in changes and not isinstance(changes["properties"], dict):
+            raise ValueError("Propriedades devem ser um objeto")
+
+        if "position" in changes:
+            self.graph.update_position(node_id, changes["position"])
+
+        if "properties" in changes:
+            self.graph.update_properties(node_id, changes["properties"])
+
+        return node
+
+    def delete_node(self, node_id: str) -> None:
+        self.graph.remove_node(node_id)
+
     def get_graph(self) -> dict:
         return self.graph.to_dict()
 

@@ -50,6 +50,20 @@ class Graph:
 
         return node
 
+    def update_properties(
+        self,
+        node_id: str,
+        properties: dict,
+    ) -> Node:
+        node = self.get_node(node_id)
+
+        if not isinstance(properties, dict):
+            raise ValueError("Propriedades devem ser um objeto")
+
+        node.properties.update(properties)
+
+        return node
+
     def remove_node(self, node_id: str) -> None:
         if node_id not in self.nodes:
             raise ValueError(f"Node '{node_id}' não existe")
