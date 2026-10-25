@@ -37,3 +37,16 @@ Connection. ID and object identity are preserved. One command records a successf
 reconnection. Cancel/Escape/invalid direction/self-drop leave backend and history
 unchanged. Domain, service, HTTP and real browser tests cover both endpoints,
 invalid changes, cancellation, ID stability and undo/redo.
+
+## Engine smoke verification
+
+Added examples/engine_smoke.vforge with stable IDs and a runnable Godot smoke
+script. Downloaded the official Godot 4.5 stable Linux binary and ran real headless
+editor import plus main-scene execution. Both false/true paths passed, including
+dialogue_requested, event_emitted and flow_finished signal assertions.
+
+Reproduce with `FORGE_GODOT=/path/to/godot python -m pytest -v tests/engines`.
+The Unity test requires FORGE_CSC and FORGE_UNITY_MANAGED_DIR with actual Unity
+CoreModule/IMGUIModule DLLs; it never substitutes fake Unity stubs. Unity compiler,
+reference assemblies and Play Mode are unavailable here, so that test is skipped.
+The existing syntax checks remain separate from engine execution claims.
