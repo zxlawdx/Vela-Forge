@@ -44,9 +44,14 @@ class Graph:
             if (
                 isinstance(value, bool)
                 or not isinstance(value, (int, float))
-                or not isfinite(value)
             ):
                 raise ValueError("Posição deve conter x e y finitos")
+
+            try:
+                if not isfinite(value):
+                    raise ValueError("Posição deve conter x e y finitos")
+            except OverflowError as error:
+                raise ValueError("Coordenada excede o intervalo numérico suportado") from error
 
             coordinates[axis] = float(value)
 

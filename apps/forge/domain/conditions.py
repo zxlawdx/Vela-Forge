@@ -41,7 +41,12 @@ def normalize_condition(condition, allow_empty_variable: bool = True) -> dict:
         raise ValueError("Branch compara apenas valores escalares")
 
     if operator in NUMERIC_OPERATORS:
-        if type(value) not in (int, float) or not isfinite(value):
+        try:
+            finite = type(value) in (int, float) and isfinite(value)
+        except OverflowError:
+            finite = False
+
+        if not finite:
             raise ValueError("Operador numérico precisa de um número finito")
 
     return {

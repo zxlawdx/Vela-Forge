@@ -1,4 +1,5 @@
 from copy import deepcopy
+import json
 
 from .assets import Asset, validate_asset
 from .conditions import normalize_condition
@@ -49,6 +50,11 @@ def serialize_project(
 def parse_project(project: dict) -> tuple[Graph, dict, dict, dict, dict]:
     if not isinstance(project, dict):
         raise ValueError("Projeto .vforge deve ser um objeto JSON")
+
+    try:
+        json.dumps(project, allow_nan=False)
+    except (TypeError, ValueError, OverflowError) as error:
+        raise ValueError("Projeto deve conter apenas valores JSON finitos") from error
 
     if type(project.get("format_version")) is not int or project["format_version"] != 1:
         raise ValueError("Versão .vforge não suportada; esperada format_version 1")
